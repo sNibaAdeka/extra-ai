@@ -1,0 +1,30 @@
+{
+  "cursor": {
+    "convention": "Cursor's Composer and Agent modes respond well to explicit @filename references and clear scope boundaries. It performs multi-file edits well when told exactly which files are in scope.",
+    "format_hint": "Reference specific files with @ when relevant: '@style.css: add...'. State scope boundaries explicitly: 'Only modify the .hero section in @index.html, do not touch anything else.' Keep instructions direct and action-first."
+  },
+  "windsurf": {
+    "convention": "Windsurf's Cascade agent is autonomous and plans multi-step execution on its own. It performs best with step-oriented or outcome-oriented instructions rather than micromanaged single actions, since it will decompose the task itself.",
+    "format_hint": "For multi-file changes, either describe the end outcome clearly and let Cascade plan the steps, or explicitly number the steps if a specific order matters: 'First update the API call in api.js, then update the UI in Dashboard.jsx to match the new response shape.'"
+  },
+  "claude_code": {
+    "convention": "Claude Code responds well to verbose, explicit context — similar to how a CLAUDE.md project file is written. It benefits from explicit 'why' context and constraints, not just the 'what'.",
+    "format_hint": "Include brief context on why the change matters and explicit constraints: 'The button color should match the brand purple (#7C3AED) used elsewhere in the header — update style.css only, preserve the existing hover transition.' Slightly longer, context-rich prompts outperform terse ones."
+  },
+  "codex": {
+    "convention": "OpenAI Codex CLI performs best with concise, action-first instructions and works well in terminal/CLI-driven workflows where it can run tests and verify its own output.",
+    "format_hint": "Lead with the exact action verb: 'Fix', 'Add', 'Remove', 'Refactor'. Keep secondary context brief and specific. Mention if tests should be run to verify: 'Fix the failing test in auth.test.js, then run the test suite to confirm.'"
+  },
+  "v0": {
+    "convention": "Vercel's v0 is component-generation focused and responds well to describing the visual outcome first, with technical implementation details second.",
+    "format_hint": "Describe the visual result before technical specifics: 'A centered pricing card with three tiers, the middle tier highlighted with a border and \"Most Popular\" badge' — then add technical constraints like framework or styling library if relevant."
+  },
+  "github_copilot": {
+    "convention": "GitHub Copilot Chat and Workspace work best with instructions scoped to the current file or a clearly referenced set of files, and respond well to comment-style inline prompts for autocomplete-driven suggestions.",
+    "format_hint": "For chat-based requests, reference the specific function or component by name: 'In the handleSubmit function, add validation for empty email before the fetch call.' For inline completion, a clear comment above the code describing intent works well: '// validate email format before submitting'."
+  },
+  "generic_fallback": {
+    "convention": "When the target tool is unknown or not in this list, default to a balanced format: specific file/element references, explicit scope boundaries, and a brief statement of intent.",
+    "format_hint": "State the file, the specific element/class, the exact change, and one explicit constraint about what NOT to change. This format performs reasonably across all major Code AI tools."
+  }
+}

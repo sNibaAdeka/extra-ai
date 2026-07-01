@@ -1,0 +1,221 @@
+{
+  "react": {
+    "common_issues": [
+      {
+        "pattern": "useEffect without cleanup on async operations",
+        "detection_hint": "useEffect containing fetch/axios/async call, no cleanup function returned, no AbortController",
+        "fix_template": "Add a cleanup guard: useEffect(() => { let active = true; fetchData().then(d => { if (active) setData(d); }); return () => { active = false; }; }, []);"
+      },
+      {
+        "pattern": "missing key prop in list rendering",
+        "detection_hint": ".map() rendering JSX elements without a key attribute, or using array index as key when list order can change",
+        "fix_template": "Add key={item.id} using a stable unique identifier from the data, not the array index unless the list is static and never reordered"
+      },
+      {
+        "pattern": "direct state mutation instead of immutable update",
+        "detection_hint": "array.push()/splice() or direct object property assignment on a state variable, then calling setState with the same mutated reference",
+        "fix_template": "Use setState([...array, newItem]) for arrays or setState({...state, key: value}) for objects — always create a new reference"
+      },
+      {
+        "pattern": "inline object or function props causing unnecessary re-renders",
+        "detection_hint": "JSX passing style={{...}} or onClick={() => ...} inline to a memoized child component",
+        "fix_template": "Move the object/function outside the render or wrap with useMemo/useCallback if passed to a React.memo-wrapped child"
+      },
+      {
+        "pattern": "expensive computation in useState initial value re-run every render",
+        "detection_hint": "useState(expensiveFunction()) instead of useState(() => expensiveFunction())",
+        "fix_template": "Use lazy initialization: useState(() => expensiveFunction()) so it only runs once on mount"
+      },
+      {
+        "pattern": "conditional rendering with && showing literal 0",
+        "detection_hint": "{count && <Component />} where count can be the number 0, rendering a stray '0' in the DOM",
+        "fix_template": "Use {count > 0 && <Component />} or {Boolean(count) && <Component />} to avoid rendering falsy numbers"
+      },
+      {
+        "pattern": "stale closure from missing dependency in useEffect/useCallback",
+        "detection_hint": "useEffect or useCallback referencing a variable from outer scope not listed in the dependency array",
+        "fix_template": "Add the missing variable to the dependency array, or use a ref if the value should not trigger re-runs"
+      },
+      {
+        "pattern": "data fetching directly in component body instead of useEffect",
+        "detection_hint": "fetch() or axios call placed directly in the function component body, executing on every render",
+        "fix_template": "Move the fetch call inside useEffect(() => { ... }, [dependencies]) so it only runs when intended"
+      },
+      {
+        "pattern": "no loading or error state handling for async data",
+        "detection_hint": "component renders data directly from state that starts as null/undefined with no loading/error branch",
+        "fix_template": "Add isLoading and error state variables, render a loading indicator or error message before the data is ready"
+      },
+      {
+        "pattern": "form inputs without controlled value binding",
+        "detection_hint": "<input> with onChange handler but no value prop bound to state, or value prop without onChange (React warning)",
+        "fix_template": "Bind both value={state} and onChange={e => setState(e.target.value)} for fully controlled inputs"
+      }
+    ]
+  },
+  "nextjs": {
+    "common_issues": [
+      {
+        "pattern": "using useEffect for data fetching instead of server-side fetch",
+        "detection_hint": "'use client' component fetching data in useEffect when the data could be fetched server-side in a Server Component",
+        "fix_template": "Move data fetching to a Server Component using async/await directly in the component function, or use fetch() with Next.js caching"
+      },
+      {
+        "pattern": "missing 'use client' directive causing hydration errors",
+        "detection_hint": "component using useState/useEffect/onClick without 'use client' at the top of the file",
+        "fix_template": "Add 'use client'; as the first line of the file when the component uses hooks or browser-only APIs"
+      },
+      {
+        "pattern": "raw <img> tag instead of next/image",
+        "detection_hint": "<img src=... > used directly instead of the Image component from 'next/image'",
+        "fix_template": "Replace with <Image src={...} width={} height={} alt={} /> from next/image for automatic optimization"
+      },
+      {
+        "pattern": "client-side environment variable missing NEXT_PUBLIC_ prefix",
+        "detection_hint": "process.env.SOME_VAR referenced in a 'use client' component without the NEXT_PUBLIC_ prefix — will be undefined in the browser",
+        "fix_template": "Rename the env variable to NEXT_PUBLIC_SOME_VAR in .env and update all client-side references"
+      },
+      {
+        "pattern": "API route without HTTP method validation",
+        "detection_hint": "app/api/*/route.ts exporting a handler that processes the request without checking req.method, accepting any verb",
+        "fix_template": "Export separate named functions per method (GET, POST, etc.) as the App Router expects, rejecting unsupported methods automatically"
+      },
+      {
+        "pattern": "missing loading.tsx or error.tsx boundaries",
+        "detection_hint": "app directory route folder with page.tsx but no loading.tsx/error.tsx sibling for a data-fetching page",
+        "fix_template": "Add loading.tsx with a skeleton/spinner and error.tsx with a retry UI in the same route folder"
+      }
+    ]
+  },
+  "vue": {
+    "common_issues": [
+      {
+        "pattern": "mutating a prop directly inside a child component",
+        "detection_hint": "component modifying a prop value directly instead of emitting an event to the parent",
+        "fix_template": "Emit an update event: emit('update:modelValue', newValue) and let the parent own the state change"
+      },
+      {
+        "pattern": "missing :key in v-for",
+        "detection_hint": "v-for directive rendering elements without a :key binding",
+        "fix_template": "Add :key=\"item.id\" using a stable unique identifier, not the loop index for dynamic lists"
+      },
+      {
+        "pattern": "reactivity lost when destructuring a reactive object",
+        "detection_hint": "const { value } = reactive({...}) — destructured primitive loses its reactive connection",
+        "fix_template": "Use toRefs(reactiveObject) before destructuring, or access properties directly without destructuring"
+      },
+      {
+        "pattern": "watchEffect or watch without cleanup for subscriptions",
+        "detection_hint": "watchEffect containing a subscription/interval/listener setup with no onCleanup call",
+        "fix_template": "Use the onCleanup callback provided to watchEffect: watchEffect((onCleanup) => { const id = setInterval(...); onCleanup(() => clearInterval(id)); })"
+      },
+      {
+        "pattern": "v-html with unsanitized dynamic content",
+        "detection_hint": "v-html=\"userGeneratedContent\" bound to data that originates from user input or an external API",
+        "fix_template": "Sanitize the HTML with a library like DOMPurify before binding, or avoid v-html and render as plain text with v-text"
+      }
+    ]
+  },
+  "tailwind": {
+    "common_issues": [
+      {
+        "pattern": "missing responsive prefix on layout-critical classes",
+        "detection_hint": "flex-row, grid-cols-3, or fixed width classes with no sm:/md:/lg: variant, likely breaking on mobile viewports",
+        "fix_template": "Add responsive variants: flex-col md:flex-row, or grid-cols-1 md:grid-cols-3 for mobile-first layout"
+      },
+      {
+        "pattern": "arbitrary values instead of theme scale",
+        "detection_hint": "classes like w-[347px], text-[#3a3a3a], p-[13px] instead of the predefined spacing/color scale",
+        "fix_template": "Prefer scale values like w-96, text-gray-700, p-3 unless the exact pixel value is a hard design requirement"
+      },
+      {
+        "pattern": "conflicting utility classes on the same element",
+        "detection_hint": "multiple classes affecting the same CSS property, e.g. both p-4 and px-2 py-6 on the same element causing unpredictable overrides",
+        "fix_template": "Consolidate to a single set of non-conflicting utility classes, remove the redundant/conflicting ones"
+      },
+      {
+        "pattern": "content paths misconfigured causing missing styles in production build",
+        "detection_hint": "tailwind.config.js content array not covering all directories where className strings are used (e.g. missing a components/ subfolder)",
+        "fix_template": "Ensure content includes all relevant paths: content: ['./src/**/*.{js,jsx,ts,tsx}', './components/**/*.{js,jsx,ts,tsx}']"
+      },
+      {
+        "pattern": "dark mode classes used without dark mode strategy configured",
+        "detection_hint": "dark: prefixed classes present in markup but darkMode option not set in tailwind.config.js (defaults may not match intended behavior)",
+        "fix_template": "Set darkMode: 'class' in tailwind.config.js and toggle a 'dark' class on the html/body element via JS to control dark mode explicitly"
+      },
+      {
+        "pattern": "overusing @apply creating unmaintainable custom classes",
+        "detection_hint": "large custom CSS classes built entirely from @apply chains that duplicate what utility classes already do inline",
+        "fix_template": "Prefer applying utility classes directly in markup; reserve @apply for genuinely reused, complex component patterns only"
+      }
+    ]
+  },
+  "bootstrap": {
+    "common_issues": [
+      {
+        "pattern": "custom CSS fighting Bootstrap specificity",
+        "detection_hint": "!important overrides or deeply nested selectors attempting to override .btn, .card, .navbar default styles",
+        "fix_template": "Use Bootstrap's CSS custom properties (--bs-btn-bg, --bs-card-border-color, etc.) or utility classes instead of !important overrides"
+      },
+      {
+        "pattern": "missing viewport meta tag breaking responsive grid",
+        "detection_hint": "<meta name=\"viewport\"...> absent from <head>, causing Bootstrap's responsive breakpoints to behave incorrectly on mobile",
+        "fix_template": "Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"> to the document head"
+      },
+      {
+        "pattern": "incorrect grid gutter usage causing overflow",
+        "detection_hint": "row/col classes used without a containing .container or .row wrapper, or nested rows without proper col padding offset",
+        "fix_template": "Ensure every .row is inside a .container or .container-fluid, and every direct child of .row is a .col-* class"
+      },
+      {
+        "pattern": "deprecated Bootstrap 4 classes used in a Bootstrap 5 project",
+        "detection_hint": "classes like .form-group, .badge-primary, .ml-2/.mr-2 (Bootstrap 4) present alongside a Bootstrap 5 CDN/package import",
+        "fix_template": "Update to Bootstrap 5 equivalents: .mb-3 instead of .form-group spacing, .text-bg-primary instead of .badge-primary, .ms-2/.me-2 instead of .ml-2/.mr-2"
+      }
+    ]
+  },
+  "vanilla_js": {
+    "common_issues": [
+      {
+        "pattern": "innerHTML assignment with unsanitized user input",
+        "detection_hint": "element.innerHTML = variable where the variable originates from user input, URL params, or an API response",
+        "fix_template": "Use element.textContent for plain text, or sanitize with DOMPurify.sanitize() before assigning to innerHTML if markup is required"
+      },
+      {
+        "pattern": "event listener added repeatedly without removal causing memory leak",
+        "detection_hint": "addEventListener called inside a function that runs multiple times (e.g. on every render/update) without a matching removeEventListener",
+        "fix_template": "Store the handler function reference and call removeEventListener with that same reference before adding it again, or use event delegation on a parent element"
+      },
+      {
+        "pattern": "global variable pollution",
+        "detection_hint": "variables declared without let/const/var at the top level, implicitly attaching to the global window object",
+        "fix_template": "Wrap code in a module (type=\"module\" script tag) or an IIFE, and always declare variables with let/const"
+      },
+      {
+        "pattern": "querySelector called repeatedly inside a loop",
+        "detection_hint": "document.querySelector or getElementById called multiple times for the same element inside a loop or frequently-called function",
+        "fix_template": "Cache the element reference in a variable outside the loop and reuse it"
+      },
+      {
+        "pattern": "z-index war with arbitrarily large values",
+        "detection_hint": "z-index values like 9999, 99999, or higher scattered across the CSS without a defined stacking system",
+        "fix_template": "Define a small set of z-index tokens (e.g. --z-dropdown: 10, --z-modal: 100, --z-toast: 1000) and use only those consistently"
+      },
+      {
+        "pattern": "float-based layout instead of flexbox or grid",
+        "detection_hint": "float: left/right combined with clearfix hacks used for multi-column layout",
+        "fix_template": "Replace float-based layout with display: flex or display: grid on the parent container — removes the need for clearfix entirely"
+      },
+      {
+        "pattern": "missing box-sizing border-box causing sizing bugs",
+        "detection_hint": "elements with both width and padding/border set, no box-sizing: border-box declared anywhere in the stylesheet",
+        "fix_template": "Add a global reset: *, *::before, *::after { box-sizing: border-box; } near the top of the main stylesheet"
+      },
+      {
+        "pattern": "blocking synchronous script tags without defer or async",
+        "detection_hint": "<script src=\"...\"> tags in <head> without defer or async attribute, blocking page render",
+        "fix_template": "Add the defer attribute for scripts that need the DOM but don't need to run immediately: <script src=\"...\" defer></script>"
+      }
+    ]
+  }
+}

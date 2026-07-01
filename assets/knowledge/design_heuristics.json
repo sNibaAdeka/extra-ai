@@ -1,0 +1,46 @@
+{
+  "spacing": {
+    "rule": "Consistent spacing built on a scale (commonly 4px or 8px increments) signals intentional design. Random values like 13px, 17px, 22px between similar elements suggest unplanned, ad-hoc adjustments rather than a system.",
+    "check": "If the screenshot shows visually inconsistent gaps between structurally similar elements (e.g. cards in a grid, list items, form fields), flag as a spacing inconsistency and suggest standardizing to a scale."
+  },
+  "contrast": {
+    "rule": "Body text should meet WCAG AA minimum contrast ratio of 4.5:1 against its background; large text (18px+ bold or 24px+ regular) can use 3:1. Placeholder text and disabled states are exempt but should still be legible.",
+    "check": "If the screenshot shows light gray text on a white or near-white background, or low-contrast color combinations for primary content, flag as an accessibility/contrast concern."
+  },
+  "hierarchy": {
+    "rule": "A page or section should have one clear primary action. When multiple buttons share identical visual weight (same size, same color saturation, same prominence), the user has no cue about which action matters most.",
+    "check": "If the screenshot shows two or more buttons of equal visual emphasis competing for attention in the same view, flag as a visual hierarchy issue and suggest establishing one primary + secondary/ghost style for the rest."
+  },
+  "responsive_breakpoints": {
+    "rule": "Content should never touch the viewport edges on mobile; a minimum of 16px horizontal padding is expected on the outermost container. Text should not overflow or get clipped at common breakpoints (375px, 768px).",
+    "check": "If the screenshot appears to be a mobile or narrow viewport and content touches the edges, overflows, or wraps awkwardly, flag as a responsive layout issue."
+  },
+  "alignment": {
+    "rule": "Elements within the same section should align to a consistent edge or baseline grid. Slightly offset left edges between adjacent elements (e.g. a label and its input, or icons in a list) read as sloppy even at a few pixels of difference.",
+    "check": "If the screenshot shows elements with visibly inconsistent left/top alignment within what should be a uniform group, flag as an alignment issue."
+  },
+  "typography_scale": {
+    "rule": "A page should use a limited, deliberate set of font sizes (typically 4-6 steps) with clear jumps between heading levels and body text. Too many similar-but-not-identical sizes (e.g. 15px, 16px, 17px used inconsistently for similar content) indicates no defined scale.",
+    "check": "If the screenshot shows headings that don't clearly stand out from body text, or inconsistent sizing for what should be the same content type, flag as a typography scale issue."
+  },
+  "color_consistency": {
+    "rule": "Interactive elements of the same type (all primary buttons, all links) should use the same color consistently across the page. Slight variations in a brand color (e.g. two different shades of blue for buttons) suggest hardcoded colors instead of a shared token/variable.",
+    "check": "If the screenshot shows visibly different shades of what should be the same brand color used for equivalent elements, flag as a color consistency issue and suggest using a shared CSS variable/design token."
+  },
+  "empty_states": {
+    "rule": "Any view that can show zero items (empty search results, empty list, no data yet) should have a deliberate empty state — a message and/or illustration — rather than a blank white space, which reads as broken to the user.",
+    "check": "If the code shows a list/grid render with no visible fallback for the empty-array case, flag as a missing empty state, even if not directly visible in the current screenshot."
+  },
+  "loading_states": {
+    "rule": "Any async data fetch visible to the user should show a loading indicator (skeleton, spinner, or progress bar) rather than a blank or frozen UI during the wait.",
+    "check": "If the code shows data-dependent rendering with no loading/isLoading branch, flag as a missing loading state even if the current screenshot happens to show loaded data."
+  },
+  "motion_restraint": {
+    "rule": "Animation should serve a purpose — indicating state change, guiding attention, or providing feedback. Animating everything (every hover, every load, every scroll) at high intensity reads as unpolished rather than premium, and can trigger motion sensitivity for some users.",
+    "check": "If the code shows many competing or excessive animations (multiple simultaneous transitions, exaggerated bounce/spin effects) without a clear purpose, flag as animation overuse and suggest reserving motion for meaningful state changes. Also check for a prefers-reduced-motion media query if animations are non-trivial."
+  },
+  "touch_target_size": {
+    "rule": "Interactive elements on mobile/touch interfaces should have a minimum tappable area of roughly 44x44px (Apple HIG) or 48x48px (Material Design) to avoid mis-taps.",
+    "check": "If the screenshot shows small icon buttons or links tightly packed together on what appears to be a mobile viewport, flag as a touch target sizing concern."
+  }
+}

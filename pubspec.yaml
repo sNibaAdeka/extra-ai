@@ -1,0 +1,53 @@
+name: extra_ai
+description: "AI-powered prompt improvement overlay for Code AI tools"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # macOS overlay window + global hotkey
+  window_manager: ^0.5.0
+  hotkey_manager: ^0.2.3
+  flutter_acrylic: ^1.1.4
+
+  # File picking + reading
+  file_picker: ^8.1.2
+
+  # Gemini API
+  google_generative_ai: ^0.4.6
+
+  # Local persistence (user profile, project context, history)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  path_provider: ^2.1.4
+
+  # Fonts + animation
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # Hive code generation for type adapters
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/knowledge/
+
+  # Fonts (Space Grotesk, Inter, JetBrains Mono) are loaded at runtime via
+  # google_fonts; no local font files needed.

@@ -1,0 +1,94 @@
+{
+  "patterns": [
+    {
+      "id": "hardcoded_api_key",
+      "regex": "(api[_-]?key|apikey)\\s*[:=]\\s*[\"']([a-zA-Z0-9_\\-]{16,})[\"']",
+      "severity": "high",
+      "description_template": "Hardcoded API key found in {filename}. Move it to an environment variable and ensure {filename} pattern is not committed with real keys — add the config file to .gitignore if it currently isn't."
+    },
+    {
+      "id": "hardcoded_private_key",
+      "regex": "-----BEGIN (RSA |EC )?PRIVATE KEY-----",
+      "severity": "high",
+      "description_template": "A private key appears to be embedded directly in {filename}. Private keys must never be committed to source — move to a secrets manager or environment variable and rotate the key immediately since it may already be compromised."
+    },
+    {
+      "id": "database_connection_string_with_credentials",
+      "regex": "(postgres|mysql|mongodb)(\\+srv)?:\\/\\/[^:]+:[^@]+@",
+      "severity": "high",
+      "description_template": "Database connection string with embedded username/password found in {filename}. Move the connection string to an environment variable and rotate the credentials."
+    },
+    {
+      "id": "missing_input_validation_on_form",
+      "detection_hint": "a form submission handler sends input directly to a fetch/API call with no length, type, or format check beforehand",
+      "severity": "medium",
+      "description_template": "The form in {filename} submits without validating input first. Add a check for empty, malformed, or unexpectedly long values before sending to the API — this prevents both bad data and basic abuse."
+    },
+    {
+      "id": "no_https_enforcement",
+      "regex": "fetch\\([\"']http:\\/\\/|axios\\.[a-z]+\\([\"']http:\\/\\/",
+      "severity": "medium",
+      "description_template": "An insecure http:// request was found in {filename}. Switch to https:// for any request carrying user data to prevent interception on the network."
+    },
+    {
+      "id": "exposed_env_file_reference",
+      "detection_hint": "a .env file's contents appear directly in the provided project files, or process.env is logged to the console",
+      "severity": "high",
+      "description_template": "Environment variable exposure risk detected — either a .env file was included directly or its values are being logged in {filename}. Confirm .env is listed in .gitignore and remove any console.log(process.env) statements."
+    },
+    {
+      "id": "unsafe_cors_configuration",
+      "detection_hint": "server config sets Access-Control-Allow-Origin to '*' while also allowing credentials: true, which browsers will reject or which represents a security misconfiguration",
+      "severity": "high",
+      "description_template": "CORS configuration in {filename} allows any origin (*) while also permitting credentials — this is both a security risk and typically rejected by browsers. Restrict Access-Control-Allow-Origin to a specific list of trusted domains."
+    },
+    {
+      "id": "xss_via_innerhtml",
+      "regex": "\\.innerHTML\\s*=\\s*[a-zA-Z_$][a-zA-Z0-9_$]*\\s*[;)]",
+      "severity": "high",
+      "description_template": "Unsanitized dynamic content assigned via innerHTML in {filename} — if this value can originate from user input or an external API, this is a cross-site scripting (XSS) risk. Sanitize with a library like DOMPurify before assigning, or use textContent for plain text."
+    },
+    {
+      "id": "sql_injection_via_string_concatenation",
+      "detection_hint": "SQL query built by directly concatenating a variable into the query string instead of using parameterized queries or an ORM",
+      "severity": "high",
+      "description_template": "SQL query in {filename} appears to concatenate user input directly into the query string — this is vulnerable to SQL injection. Use parameterized queries or a query builder/ORM that escapes input automatically."
+    },
+    {
+      "id": "missing_csrf_protection",
+      "detection_hint": "state-changing form/API endpoint (POST/PUT/DELETE) with no CSRF token validation and cookie-based session auth",
+      "severity": "medium",
+      "description_template": "The endpoint handling form submission in {filename} does not appear to validate a CSRF token. If using cookie-based sessions, add CSRF protection (e.g. a synchronizer token or SameSite=Strict cookies) to prevent cross-site request forgery."
+    },
+    {
+      "id": "client_side_only_validation",
+      "detection_hint": "input validation logic exists only in frontend JavaScript with no matching server-side validation on the corresponding API endpoint",
+      "severity": "medium",
+      "description_template": "Validation in {filename} happens only in the browser — anyone can bypass this by calling the API directly. Add matching validation on the server-side endpoint as the source of truth."
+    },
+    {
+      "id": "stack_trace_exposed_in_error_response",
+      "detection_hint": "error handler returns the raw error object, error.stack, or a full exception message directly in the API response sent to the client",
+      "severity": "medium",
+      "description_template": "The error handler in {filename} returns internal error details (stack trace or raw exception) to the client. Return a generic error message to the client and log the detailed error server-side only."
+    },
+    {
+      "id": "missing_rate_limiting_on_auth_endpoint",
+      "detection_hint": "login, signup, or password-reset endpoint with no rate limiting or lockout mechanism after repeated failed attempts",
+      "severity": "medium",
+      "description_template": "The authentication endpoint in {filename} has no visible rate limiting — this allows brute-force attacks against user credentials. Add a rate limiter (e.g. max 5 attempts per 15 minutes per IP/account) on login and password-reset routes."
+    },
+    {
+      "id": "insecure_direct_object_reference",
+      "detection_hint": "an API endpoint fetches or modifies a resource by ID from the request without checking that the authenticated user actually owns or has permission to access that resource",
+      "severity": "high",
+      "description_template": "The endpoint in {filename} retrieves a resource by ID without verifying the requesting user has permission to access it — this allows one user to access another user's data by guessing/incrementing IDs. Add an ownership or permission check before returning the resource."
+    },
+    {
+      "id": "missing_content_security_policy",
+      "detection_hint": "no Content-Security-Policy header set anywhere in the server config or meta tags, for a project that renders any dynamic or user-generated content",
+      "severity": "low",
+      "description_template": "No Content-Security-Policy header was found. Consider adding a CSP header to restrict which sources can load scripts/styles, reducing the impact of any XSS that slips through — start with a report-only policy to avoid breaking existing functionality."
+    }
+  ]
+}
