@@ -55,11 +55,15 @@ class PillWidget extends StatelessWidget {
                     children: [
                       const LogoMark(size: 22),
                       const SizedBox(width: 10),
-                      Text(
-                        'Extra AI',
-                        style: AppTheme.display(
-                          size: 15,
-                          weight: FontWeight.w600,
+                      Flexible(
+                        child: Text(
+                          'Extra AI',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTheme.display(
+                            size: 15,
+                            weight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
