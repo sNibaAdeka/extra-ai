@@ -149,9 +149,9 @@ Signature visual devices, carried through every section:
 - Title: "start free. *upgrade when it's obvious.*"
 - **FREE — $0**: 5 analyses/month · works with any Code AI tool · basic
   prompt grounding · CTA "Download — free"
-- **PRO — $9/mo** (marked "Most popular" in ember): unlimited analyses · 1
-  active project with memory · tool-specific prompt formatting · CTA "Start
-  Pro"
+- **PRO — $9/mo** (marked "Most popular" in ember): unlimited analyses
+  (200/day fair use) · 1 active project with memory · tool-specific prompt
+  formatting · CTA "Start Pro"
 - **STUDIO — $29/mo**: everything in Pro · up to 5 projects · security &
   issue detection included · team sharing · CTA "Start Studio"
 - Small text under pricing: "cancel anytime · no credit card for Free"

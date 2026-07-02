@@ -15,6 +15,8 @@ class OverlayWindow extends StatelessWidget {
     required this.child,
     this.onClose,
     this.onSettings,
+    this.statusDotColor,
+    this.statusTooltip,
     this.width = 380,
     this.height = 580,
   });
@@ -22,6 +24,11 @@ class OverlayWindow extends StatelessWidget {
   final Widget child;
   final VoidCallback? onClose;
   final VoidCallback? onSettings;
+
+  /// Calm service-health indicator next to the settings gear (amber when a
+  /// backing service is degraded). Null hides the dot entirely.
+  final Color? statusDotColor;
+  final String? statusTooltip;
   final double width;
   final double height;
 
@@ -38,7 +45,12 @@ class OverlayWindow extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _Header(onClose: onClose, onSettings: onSettings),
+              _Header(
+                onClose: onClose,
+                onSettings: onSettings,
+                statusDotColor: statusDotColor,
+                statusTooltip: statusTooltip,
+              ),
               const Divider(height: 1, color: AppTheme.borderSubtle),
               Expanded(
                 child: Padding(
@@ -60,10 +72,17 @@ class OverlayWindow extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({this.onClose, this.onSettings});
+  const _Header({
+    this.onClose,
+    this.onSettings,
+    this.statusDotColor,
+    this.statusTooltip,
+  });
 
   final VoidCallback? onClose;
   final VoidCallback? onSettings;
+  final Color? statusDotColor;
+  final String? statusTooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +97,25 @@ class _Header extends StatelessWidget {
             style: AppTheme.display(size: 16, weight: FontWeight.w600),
           ),
           const Spacer(),
+          if (statusDotColor != null)
+            Tooltip(
+              message: statusTooltip ?? 'Service status',
+              child: Container(
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  color: statusDotColor,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusDotColor!.withValues(alpha: 0.5),
+                      blurRadius: 6,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           if (onSettings != null)
             _IconButton(
               icon: Icons.settings_outlined,

@@ -85,11 +85,11 @@ class _BorderPainter extends CustomPainter {
       endAngle: 2 * math.pi,
       transform: GradientRotation(progress * 2 * math.pi),
       colors: const [
-        AppTheme.purple,
-        AppTheme.blue,
-        AppTheme.purple,
-        AppTheme.blue,
-        AppTheme.purple,
+        AppTheme.accent,
+        AppTheme.accentDeep,
+        AppTheme.accent,
+        AppTheme.accentDeep,
+        AppTheme.accent,
       ],
       stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
     ).createShader(rect);
@@ -117,7 +117,7 @@ class _BorderPainter extends CustomPainter {
 
   void _paintCornerGlow(Canvas canvas, Size size, double breath) {
     final cornerPaint = Paint()
-      ..color = AppTheme.purple.withValues(alpha: 0.5 * breath)
+      ..color = AppTheme.accent.withValues(alpha: 0.5 * breath)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 40);
     const inset = 6.0;
     final corners = [

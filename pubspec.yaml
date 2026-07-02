@@ -21,8 +21,11 @@ dependencies:
   # File picking + reading
   file_picker: ^8.1.2
 
-  # Gemini API
+  # Gemini API (generator)
   google_generative_ai: ^0.4.6
+
+  # Azure OpenAI REST (critic / verification model)
+  http: ^1.2.0
 
   # Local persistence (user profile, project context, history)
   hive: ^2.2.3

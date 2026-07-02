@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -70,6 +72,19 @@ class OverlayRoot extends StatelessWidget {
     );
   }
 
+  /// Calm health indicator: amber when a configured service failed its probe,
+  /// lime when everything checked out, hidden before the first probe.
+  Color? get _statusDotColor {
+    final health = state.health;
+    if (health.isDegraded) return AppTheme.signalOrange;
+    if (health.isHealthy) return AppTheme.accent;
+    return null;
+  }
+
+  String get _statusTooltip => state.health.isDegraded
+      ? 'A service is degraded — results may be limited'
+      : 'All services healthy';
+
   Widget _window(BuildContext context) {
     switch (state.view) {
       case OverlayView.onboarding:
@@ -80,6 +95,8 @@ class OverlayRoot extends StatelessWidget {
         return OverlayWindow(
           onClose: onDismiss,
           onSettings: state.openSettings,
+          statusDotColor: _statusDotColor,
+          statusTooltip: _statusTooltip,
           child: PromptInput(
             fileCount: state.fileCount,
             onPickFiles: () => _pickFiles(context),
@@ -98,8 +115,11 @@ class OverlayRoot extends StatelessWidget {
         return OverlayWindow(
           onClose: onDismiss,
           onSettings: state.openSettings,
+          statusDotColor: _statusDotColor,
+          statusTooltip: _statusTooltip,
           child: ResultsView(
             response: state.response!,
+            verificationStatus: state.verification,
             onCopyInsert: onDismiss,
             onEdit: state.showInput,
           ),
@@ -134,7 +154,9 @@ class OverlayRoot extends StatelessWidget {
       final bytes = file.bytes;
       if (bytes == null) continue;
       try {
-        raw[file.name] = String.fromCharCodes(bytes);
+        // UTF-8 decode (not fromCharCodes) so non-ASCII source — Cyrillic
+        // comments, emoji in strings — survives intact.
+        raw[file.name] = utf8.decode(bytes, allowMalformed: true);
       } catch (_) {
         continue; // skip binary
       }

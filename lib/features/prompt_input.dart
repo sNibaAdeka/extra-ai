@@ -204,7 +204,7 @@ class _PromptField extends StatelessWidget {
       minLines: 3,
       maxLines: 6,
       style: AppTheme.mono(size: 13),
-      cursorColor: AppTheme.purple,
+      cursorColor: AppTheme.accent,
       decoration: InputDecoration(
         hintText: 'make the button prettier...',
         hintStyle: AppTheme.mono(size: 13, color: AppTheme.textDim),
@@ -219,7 +219,7 @@ class _PromptField extends StatelessWidget {
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide:
-              BorderSide(color: AppTheme.purple.withValues(alpha: 0.6)),
+              BorderSide(color: AppTheme.accent.withValues(alpha: 0.6)),
         ),
       ),
     );

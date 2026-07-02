@@ -33,12 +33,12 @@ class OnboardingOption extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
             color: selected
-                ? AppTheme.purple.withValues(alpha: 0.12)
+                ? AppTheme.accent.withValues(alpha: 0.12)
                 : AppTheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
-                  ? AppTheme.purple.withValues(alpha: 0.6)
+                  ? AppTheme.accent.withValues(alpha: 0.6)
                   : AppTheme.borderSubtle,
             ),
           ),
@@ -86,7 +86,7 @@ class _Indicator extends StatelessWidget {
             : Border.all(color: AppTheme.textDim.withValues(alpha: 0.6)),
       ),
       child: selected
-          ? const Icon(Icons.check, size: 14, color: Colors.white)
+          ? const Icon(Icons.check, size: 14, color: AppTheme.onAccent)
           : null,
     );
   }

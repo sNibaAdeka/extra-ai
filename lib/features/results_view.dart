@@ -2,20 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import '../app/app_state.dart' show VerificationStatus;
 import '../models/extra_ai_response.dart';
 import '../theme/app_theme.dart';
 import '../widgets/gradient_button.dart';
 import '../widgets/issue_card.dart';
 
-/// Results view: the improved prompt (green scan-line accent + copy), the
+/// Results view: the improved prompt (lime scan-line accent + copy), the
 /// issues section (orange accent, or a locked/unlock state on the free tier),
 /// an optional clarifying-question card, and the bottom action buttons.
+/// Shows the two-model quality-gate outcome: a quiet "Verified" chip when the
+/// critic passed the draft, and an honest note when the check couldn't run.
 class ResultsView extends StatelessWidget {
   const ResultsView({
     super.key,
     required this.response,
     required this.onCopyInsert,
     required this.onEdit,
+    this.verificationStatus = VerificationStatus.skipped,
     this.issuesLocked = false,
     this.onUnlock,
     this.onReanalyze,
@@ -24,6 +28,7 @@ class ResultsView extends StatelessWidget {
   final ExtraAIResponse response;
   final VoidCallback onCopyInsert;
   final VoidCallback onEdit;
+  final VerificationStatus verificationStatus;
 
   /// Free-tier: issues shown locked behind an Unlock pill.
   final bool issuesLocked;
@@ -42,7 +47,15 @@ class ResultsView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _ImprovedPromptSection(text: response.improvedPrompt),
+                if (verificationStatus == VerificationStatus.unavailable) ...[
+                  const _QualityCheckNote(),
+                  const SizedBox(height: 12),
+                ],
+                _ImprovedPromptSection(
+                  text: response.improvedPrompt,
+                  verified: verificationStatus == VerificationStatus.verified ||
+                      verificationStatus == VerificationStatus.corrected,
+                ),
                 const SizedBox(height: 20),
                 if (response.issues.isNotEmpty || issuesLocked)
                   _IssuesSection(
@@ -116,9 +129,73 @@ class _ScanLineSection extends StatelessWidget {
   }
 }
 
+/// Honest degradation note: the critic was unreachable, the best available
+/// draft is shown anyway — reliability means graceful degradation, not an
+/// all-or-nothing gate.
+class _QualityCheckNote extends StatelessWidget {
+  const _QualityCheckNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.signalOrange.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border:
+            Border.all(color: AppTheme.signalOrange.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline,
+              size: 14, color: AppTheme.signalOrange),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Quality check unavailable — showing best result.',
+              style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Quiet chip shown when the independent critic model checked this response.
+class _VerifiedChip extends StatelessWidget {
+  const _VerifiedChip();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: AppTheme.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(100),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.verified_outlined,
+              size: 12, color: AppTheme.accent),
+          const SizedBox(width: 4),
+          Text('Verified',
+              style: AppTheme.ui(
+                  size: 10.5,
+                  weight: FontWeight.w600,
+                  color: AppTheme.accent)),
+        ],
+      ),
+    );
+  }
+}
+
 class _ImprovedPromptSection extends StatefulWidget {
-  const _ImprovedPromptSection({required this.text});
+  const _ImprovedPromptSection({required this.text, this.verified = false});
   final String text;
+  final bool verified;
 
   @override
   State<_ImprovedPromptSection> createState() => _ImprovedPromptSectionState();
@@ -155,6 +232,10 @@ class _ImprovedPromptSectionState extends State<_ImprovedPromptSection> {
                   color: AppTheme.signalGreen,
                 ),
               ),
+              if (widget.verified) ...[
+                const SizedBox(width: 8),
+                const _VerifiedChip(),
+              ],
               const Spacer(),
               _CopyButton(copied: _copied, onTap: _copy),
             ],
@@ -322,9 +403,9 @@ class _ClarifyingCardState extends State<_ClarifyingCard> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppTheme.blue.withValues(alpha: 0.08),
+        color: AppTheme.accentDeep.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppTheme.blue.withValues(alpha: 0.3)),
+        border: Border.all(color: AppTheme.accentDeep.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -332,7 +413,7 @@ class _ClarifyingCardState extends State<_ClarifyingCard> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.help_outline, size: 16, color: AppTheme.blue),
+              Icon(Icons.help_outline, size: 16, color: AppTheme.accentDeep),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(widget.question,
@@ -344,7 +425,7 @@ class _ClarifyingCardState extends State<_ClarifyingCard> {
           TextField(
             controller: _controller,
             style: AppTheme.ui(size: 13),
-            cursorColor: AppTheme.blue,
+            cursorColor: AppTheme.accentDeep,
             decoration: InputDecoration(
               isDense: true,
               hintText: 'Answer...',
@@ -371,7 +452,7 @@ class _ClarifyingCardState extends State<_ClarifyingCard> {
                   style: AppTheme.ui(
                       size: 13,
                       weight: FontWeight.w600,
-                      color: AppTheme.blue)),
+                      color: AppTheme.accentDeep)),
             ),
           ),
         ],

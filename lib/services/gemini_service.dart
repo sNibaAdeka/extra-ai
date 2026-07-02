@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:google_generative_ai/google_generative_ai.dart';
 
 import '../models/extra_ai_response.dart';
+import '../reliability/reliable_api_caller.dart';
 import '../security/response_validator.dart';
 import '../understanding/error_messages.dart';
 import 'system_prompt.dart';
@@ -54,6 +56,19 @@ class GeminiPromptModel implements PromptModel {
       return response.text;
     } on TimeoutException {
       throw GeminiTimeout();
+    }
+  }
+
+  /// Lightweight connectivity/auth probe for the launch health check —
+  /// a countTokens call, never a full generation.
+  Future<bool> healthCheck() async {
+    try {
+      await _model
+          .countTokens([Content.text('ping')])
+          .timeout(const Duration(seconds: 6));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }
@@ -109,12 +124,50 @@ class GeminiService {
     }
   }
 
+  /// One corrective pass after a failed verification: resend the original
+  /// request together with the previous draft and the critic's specific
+  /// instruction, asking Gemini to fix only the flagged issue. Never loops —
+  /// best-effort after one retry, latency over perfection.
+  Future<AnalyzeResult> correctDraft({
+    required String fullPrompt,
+    required ExtraAIResponse draft,
+    required String correctionInstruction,
+    List<int>? screenshotBytes,
+  }) async {
+    final correctivePrompt = '''
+$fullPrompt
+
+PREVIOUS DRAFT (JSON):
+${jsonEncode(draft.toJson())}
+
+QUALITY CHECK FLAGGED THIS PROBLEM:
+$correctionInstruction
+
+Return the corrected JSON only. Change ONLY what is needed to fix the flagged
+problem; keep everything else identical to the previous draft.
+''';
+    try {
+      final fixed = await _attempt(correctivePrompt, screenshotBytes);
+      if (fixed != null) return AnalyzeResult.success(fixed);
+      return AnalyzeResult.failed(FailureType.invalidResponse);
+    } on GeminiTimeout {
+      return AnalyzeResult.failed(FailureType.networkTimeout);
+    } catch (_) {
+      return AnalyzeResult.failed(FailureType.unknown);
+    }
+  }
+
   /// One model call + validation. Returns null if the reply is null/invalid.
+  /// The network call itself is wrapped with timeout + retry so a single slow
+  /// or dropped request never stalls the pipeline.
   Future<ExtraAIResponse?> _attempt(
     String fullPrompt,
     List<int>? screenshotBytes,
   ) async {
-    final raw = await _model.generate(fullPrompt, screenshotBytes: screenshotBytes);
+    final raw = await ReliableApiCaller.callWithRetry(
+      () => _model.generate(fullPrompt, screenshotBytes: screenshotBytes),
+      timeout: const Duration(seconds: 12),
+    );
     if (raw == null) return null;
     return ResponseValidator.validateAndParse(raw);
   }

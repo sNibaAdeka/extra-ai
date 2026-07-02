@@ -58,7 +58,7 @@ class _GradientButtonState extends State<GradientButton> {
                 boxShadow: _active
                     ? [
                         BoxShadow(
-                          color: AppTheme.purple.withValues(alpha: 0.35),
+                          color: AppTheme.accent.withValues(alpha: 0.35),
                           blurRadius: 20,
                           spreadRadius: -6,
                           offset: const Offset(0, 8),
@@ -71,7 +71,11 @@ class _GradientButtonState extends State<GradientButton> {
                 children: [
                   Text(
                     widget.label,
-                    style: AppTheme.ui(size: 15, weight: FontWeight.w600),
+                    style: AppTheme.ui(
+                      size: 15,
+                      weight: FontWeight.w600,
+                      color: AppTheme.onAccent,
+                    ),
                   ),
                   if (widget.trailing != null) ...[
                     const SizedBox(width: 8),
@@ -80,7 +84,7 @@ class _GradientButtonState extends State<GradientButton> {
                       style: AppTheme.ui(
                         size: 14,
                         weight: FontWeight.w500,
-                        color: Colors.white.withValues(alpha: 0.85),
+                        color: AppTheme.onAccent.withValues(alpha: 0.75),
                       ),
                     ),
                   ],

@@ -2,47 +2,56 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// Extra AI design token system — single source of truth for color, gradient,
-/// and typography. Reference this everywhere; never hardcode raw hex in widgets.
+/// and typography. Reference this everywhere; never hardcode raw hex in
+/// widgets.
 ///
-/// Signature aesthetic: dark glass surfaces, a deliberate purple→blue gradient
-/// (never generic neon-green), a breathing screen border, and a scan-line
-/// device on result sections. See SECTION 0 of the master build prompt.
+/// Visual language (matched to the Ludr product family): near-black olive
+/// surfaces, a single lime accent used deliberately, serif display headings
+/// over a geometric sans for UI — warm, calm, and specific. The breathing
+/// screen border stays the one prominent animation.
 class AppTheme {
   AppTheme._();
 
   // ---------------------------------------------------------------------------
   // Color tokens
   // ---------------------------------------------------------------------------
-  static const Color bgVoid = Color(0xFF0A0A0A);
-  static const Color surface = Color(0xFF131316);
-  static const Color surfaceHigh = Color(0xFF1A1A1A);
-  static const Color borderSubtle = Color(0x14FFFFFF); // white @ 8%
-  static const Color borderFocus = Color(0x99897FED);
+  static const Color bgVoid = Color(0xFF0D0F09);
+  static const Color surface = Color(0xFF14170E);
+  static const Color surfaceHigh = Color(0xFF1C2013);
+  static const Color borderSubtle = Color(0x17FFFFFF); // white @ ~9%, warm
+  static const Color borderFocus = Color(0x99B5E04A);
 
-  static const Color purple = Color(0xFF7C3AED);
-  static const Color blue = Color(0xFF2563EB);
-  static const Color signalGreen = Color(0xFF22C55E);
+  /// The lime brand accent and its deeper companion (gradients, glows).
+  static const Color accent = Color(0xFFB5E04A);
+  static const Color accentDeep = Color(0xFF8FBE2B);
+
+  /// Text/icon color placed ON the lime accent (dark, per the Ludr buttons).
+  static const Color onAccent = Color(0xFF10120B);
+
+  /// Success shares the brand lime; warnings stay warm orange; destructive red.
+  static const Color signalGreen = Color(0xFFB5E04A);
   static const Color signalOrange = Color(0xFFF97316);
+  static const Color signalRed = Color(0xFFE05B45);
 
-  static const Color textPrimary = Color(0xFFFFFFFF);
-  static const Color textSecondary = Color(0xFF9CA3AF);
-  static const Color textDim = Color(0xFF6B7280);
+  static const Color textPrimary = Color(0xFFF2F3EC);
+  static const Color textSecondary = Color(0xFFA3A98F);
+  static const Color textDim = Color(0xFF6E7360);
 
   // ---------------------------------------------------------------------------
   // Gradients
   // ---------------------------------------------------------------------------
 
-  /// Brand gradient — buttons, logo mark, accents. Left → right.
+  /// Brand gradient — logo mark, accents, glow edges. Left → right.
   static const Gradient brandGradient = LinearGradient(
-    colors: [purple, blue],
+    colors: [Color(0xFFC8E965), accentDeep],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
-  /// Border gradient — the breathing screen border. purple → blue → purple so
-  /// the animated stop offset loops seamlessly.
+  /// Border gradient — the breathing screen border. lime → deep → lime so the
+  /// animated stop offset loops seamlessly.
   static const Gradient borderGradient = LinearGradient(
-    colors: [purple, blue, purple],
+    colors: [accent, accentDeep, accent],
     stops: [0.0, 0.5, 1.0],
   );
 
@@ -50,14 +59,14 @@ class AppTheme {
   // Surface decoration helpers
   // ---------------------------------------------------------------------------
 
-  /// Dark glass panel used by the overlay window (rgba(10,10,10,0.92)).
+  /// Dark glass panel used by the overlay window.
   static BoxDecoration glassPanel({double radius = 20}) => BoxDecoration(
-        color: bgVoid.withValues(alpha: 0.92),
+        color: bgVoid.withValues(alpha: 0.94),
         borderRadius: BorderRadius.circular(radius),
         border: Border.all(color: borderSubtle),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x99000000), // rgba(0,0,0,0.6)
+            color: Color(0x99000000),
             blurRadius: 80,
             offset: Offset(0, 32),
           ),
@@ -66,9 +75,9 @@ class AppTheme {
 
   // ---------------------------------------------------------------------------
   // Typography
-  //   Display / logo : Space Grotesk (geometric, technical)
-  //   UI text        : Inter
-  //   Code / prompts : JetBrains Mono
+  //   Display / headings : Lora (serif — the Ludr editorial voice)
+  //   UI text            : Space Grotesk (geometric, technical warmth)
+  //   Code / prompts     : JetBrains Mono
   // ---------------------------------------------------------------------------
 
   static TextStyle display({
@@ -77,7 +86,7 @@ class AppTheme {
     Color color = textPrimary,
     double? letterSpacing,
   }) =>
-      GoogleFonts.spaceGrotesk(
+      GoogleFonts.lora(
         fontSize: size,
         fontWeight: weight,
         color: color,
@@ -90,7 +99,7 @@ class AppTheme {
     Color color = textPrimary,
     double height = 1.4,
   }) =>
-      GoogleFonts.inter(
+      GoogleFonts.spaceGrotesk(
         fontSize: size,
         fontWeight: weight,
         color: color,
@@ -118,12 +127,13 @@ class AppTheme {
     return base.copyWith(
       scaffoldBackgroundColor: Colors.transparent,
       colorScheme: base.colorScheme.copyWith(
-        primary: purple,
-        secondary: blue,
+        primary: accent,
+        onPrimary: onAccent,
+        secondary: accentDeep,
         surface: surface,
-        error: signalOrange,
+        error: signalRed,
       ),
-      textTheme: GoogleFonts.interTextTheme(base.textTheme),
+      textTheme: GoogleFonts.spaceGroteskTextTheme(base.textTheme),
     );
   }
 

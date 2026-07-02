@@ -4,18 +4,35 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'dart:async';
+
 import 'app/app_state.dart';
 import 'app/overlay_root.dart';
+import 'services/azure_openai_client.dart';
 import 'services/gemini_service.dart';
+import 'services/health_check_service.dart';
 import 'services/history_service.dart';
 import 'services/knowledge_base_service.dart';
 import 'services/profile_service.dart';
 import 'services/project_context_service.dart';
+import 'services/verification_service.dart';
 import 'theme/app_theme.dart';
 
-/// The Gemini API key is injected at build/run time and never committed:
-///   flutter run -d macos --dart-define=GEMINI_API_KEY=your_key
+/// All credentials are injected at build/run time and never committed:
+///   flutter run -d macos \
+///     --dart-define=GEMINI_API_KEY=your_key \
+///     --dart-define=AZURE_OPENAI_ENDPOINT=https://res.openai.azure.com \
+///     --dart-define=AZURE_OPENAI_KEY=your_azure_key
 const String _geminiApiKey = String.fromEnvironment('GEMINI_API_KEY');
+const String _azureEndpoint = String.fromEnvironment('AZURE_OPENAI_ENDPOINT');
+const String _azureKey = String.fromEnvironment('AZURE_OPENAI_KEY');
+const String _azureDeployment = String.fromEnvironment(
+  'AZURE_OPENAI_DEPLOYMENT',
+  defaultValue: 'gpt-4o-mini',
+);
+
+/// DEMO-ONLY (see demo_fallback.dart): --dart-define=DEMO_FALLBACK=true
+const bool _demoFallbackEnabled = bool.fromEnvironment('DEMO_FALLBACK');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -47,14 +64,28 @@ Future<void> main() async {
   await KnowledgeBaseService.loadAll();
 
   // --- Services + app state -------------------------------------------------
+  final geminiModel = GeminiPromptModel(apiKey: _geminiApiKey);
+  final critic = AzureOpenAIClient(
+    endpoint: _azureEndpoint,
+    apiKey: _azureKey,
+    deployment: _azureDeployment,
+  );
   final appState = AppState(
     profileService: ProfileService(profileBox),
     projectService: ProjectContextService(projectBox),
     historyService: HistoryService(store: HiveHistoryStore(historyBox)),
-    geminiService: GeminiService(
-      model: GeminiPromptModel(apiKey: _geminiApiKey),
+    geminiService: GeminiService(model: geminiModel),
+    verificationService: VerificationService(critic: critic),
+    healthCheckService: HealthCheckService(
+      generatorProbe: _geminiApiKey.isEmpty ? null : geminiModel.healthCheck,
+      criticProbe: critic.isConfigured ? critic.healthCheck : null,
     ),
+    demoFallbackEnabled: _demoFallbackEnabled,
   );
+
+  // Silent background health probe — a broken key surfaces as a calm amber
+  // dot in the window header, never as a mid-demo surprise.
+  unawaited(appState.runHealthCheck());
 
   // --- Global hotkey ⌘⇧E -----------------------------------------------------
   final overlayController = OverlayController(appState);

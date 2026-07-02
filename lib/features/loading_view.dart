@@ -76,7 +76,7 @@ class _LoadingViewState extends State<LoadingView>
           ),
         ],
         const Spacer(),
-        _ProgressBar(controller: _controller, reduceMotion: reduceMotion),
+        _ProgressBar(reduceMotion: reduceMotion),
       ],
     );
   }
@@ -103,7 +103,7 @@ class _RingPainter extends CustomPainter {
     // Bright gradient sweep — a ~270° arc that rotates.
     final sweep = Paint()
       ..shader = SweepGradient(
-        colors: const [AppTheme.purple, AppTheme.blue, AppTheme.purple],
+        colors: const [AppTheme.accent, AppTheme.accentDeep, AppTheme.accent],
         stops: const [0.0, 0.5, 1.0],
         transform: GradientRotation(turns * 2 * math.pi),
       ).createShader(rect)
@@ -120,9 +120,8 @@ class _RingPainter extends CustomPainter {
 }
 
 class _ProgressBar extends StatelessWidget {
-  const _ProgressBar({required this.controller, required this.reduceMotion});
+  const _ProgressBar({required this.reduceMotion});
 
-  final Animation<double> controller;
   final bool reduceMotion;
 
   @override
@@ -131,18 +130,13 @@ class _ProgressBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(3),
       child: SizedBox(
         height: 3,
+        // An indeterminate LinearProgressIndicator animates itself — no
+        // external controller needed.
         child: reduceMotion
-            ? Container(color: AppTheme.purple.withValues(alpha: 0.5))
-            : AnimatedBuilder(
-                animation: controller,
-                builder: (context, _) {
-                  return LinearProgressIndicator(
-                    value: null,
-                    backgroundColor: Colors.white.withValues(alpha: 0.06),
-                    valueColor:
-                        const AlwaysStoppedAnimation(AppTheme.purple),
-                  );
-                },
+            ? Container(color: AppTheme.accent.withValues(alpha: 0.5))
+            : LinearProgressIndicator(
+                backgroundColor: Colors.white.withValues(alpha: 0.06),
+                valueColor: const AlwaysStoppedAnimation(AppTheme.accent),
               ),
       ),
     );

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:extra_ai/app/app_state.dart' show VerificationStatus;
 import 'package:extra_ai/features/loading_view.dart';
 import 'package:extra_ai/features/onboarding/onboarding_flow.dart';
 import 'package:extra_ai/features/prompt_input.dart';
@@ -101,6 +102,33 @@ void main() {
     )));
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Unlock'), findsOneWidget);
+  });
+
+  testWidgets('ResultsView shows a Verified chip when the critic passed',
+      (tester) async {
+    const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
+    await tester.pumpWidget(_host(ResultsView(
+      response: response,
+      verificationStatus: VerificationStatus.verified,
+      onCopyInsert: () {},
+      onEdit: () {},
+    )));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.text('Verified'), findsOneWidget);
+  });
+
+  testWidgets('ResultsView shows the honest note when the check was unavailable',
+      (tester) async {
+    const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
+    await tester.pumpWidget(_host(ResultsView(
+      response: response,
+      verificationStatus: VerificationStatus.unavailable,
+      onCopyInsert: () {},
+      onEdit: () {},
+    )));
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.textContaining('Quality check unavailable'), findsOneWidget);
+    expect(find.text('Verified'), findsNothing);
   });
 
   testWidgets('Onboarding gates Continue until a choice is made',

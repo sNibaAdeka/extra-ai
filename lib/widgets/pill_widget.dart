@@ -23,7 +23,7 @@ class PillWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(100),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.purple.withValues(alpha: 0.35),
+              color: AppTheme.accent.withValues(alpha: 0.35),
               blurRadius: 28,
               spreadRadius: -4,
               offset: const Offset(0, 6),
@@ -44,10 +44,10 @@ class PillWidget extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 14),
                   constraints: const BoxConstraints(minWidth: 220),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0D0D0D).withValues(alpha: 0.88),
+                    color: AppTheme.bgVoid.withValues(alpha: 0.9),
                     borderRadius: BorderRadius.circular(100),
                     border: Border.all(
-                      color: AppTheme.purple.withValues(alpha: 0.4),
+                      color: AppTheme.accent.withValues(alpha: 0.4),
                     ),
                   ),
                   child: Row(
