@@ -74,10 +74,10 @@ void main() {
     expect(state.view, OverlayView.input);
   });
 
-  test('completing onboarding moves to input and persists', () async {
+  test('completing onboarding moves to the home shell and persists', () async {
     final state = build(model: _FakeModel(goodJson), withProfile: false);
     await state.completeOnboarding(_profile());
-    expect(state.view, OverlayView.input);
+    expect(state.view, OverlayView.home);
   });
 
   test('empty prompt fails with a message, stays on input', () async {
@@ -113,12 +113,22 @@ void main() {
     expect(state.errorMessage, isNotNull);
   });
 
-  test('settings navigation returns to the previous view', () {
+  test('settings opens as a modal over the shell and closes back', () {
     final state = build(model: _FakeModel(goodJson));
-    expect(state.view, OverlayView.input);
-    state.openSettings();
-    expect(state.view, OverlayView.settings);
+    expect(state.settingsOpen, isFalse);
+    state.openSettings(SettingsTab.profile);
+    expect(state.settingsOpen, isTrue);
+    expect(state.settingsTab, SettingsTab.profile);
+    expect(state.view, OverlayView.home); // modal lives over the shell
     state.closeSettings();
+    expect(state.settingsOpen, isFalse);
+  });
+
+  test('template hotkey prefills the input view once', () {
+    final state = build(model: _FakeModel(goodJson));
+    state.startTemplateAnalysis('Run a security check on this code');
     expect(state.view, OverlayView.input);
+    expect(state.takePrefillPrompt(), 'Run a security check on this code');
+    expect(state.takePrefillPrompt(), isNull); // consumed
   });
 }

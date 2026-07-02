@@ -7,7 +7,7 @@ import '../features/loading_view.dart';
 import '../features/onboarding/onboarding_flow.dart';
 import '../features/prompt_input.dart';
 import '../features/results_view.dart';
-import '../features/settings/settings_screen.dart';
+import '../features/shell/app_shell.dart';
 import '../overlay/overlay_window.dart';
 import '../overlay/screen_border.dart';
 import '../theme/app_theme.dart';
@@ -18,10 +18,18 @@ import 'app_state.dart';
 /// top-center, and the floating window on the right whose body follows
 /// [AppState.view]. Escape closes; the caller wires the hotkey + window hide.
 class OverlayRoot extends StatelessWidget {
-  const OverlayRoot({super.key, required this.state, required this.onDismiss});
+  const OverlayRoot({
+    super.key,
+    required this.state,
+    required this.onDismiss,
+    this.onBindingsChanged,
+  });
 
   final AppState state;
   final VoidCallback onDismiss;
+
+  /// Re-registers quick-template hotkeys after a binding change (main.dart).
+  final VoidCallback? onBindingsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -89,16 +97,29 @@ class OverlayRoot extends StatelessWidget {
     switch (state.view) {
       case OverlayView.onboarding:
         return OverlayWindow(
-          child: OnboardingFlow(onComplete: state.completeOnboarding),
+          width: 920,
+          height: 620,
+          child: OnboardingFlow(
+            onComplete: state.completeOnboarding,
+            onHotkeyChanged: (combo) => state.settings?.setHotkeyCombo(combo),
+          ),
+        );
+      case OverlayView.home:
+        return AppShell(
+          state: state,
+          onNewAnalysis: state.showInput,
+          onBindingsChanged: onBindingsChanged,
         );
       case OverlayView.input:
         return OverlayWindow(
           onClose: onDismiss,
           onSettings: state.openSettings,
+          onHome: state.showHome,
           statusDotColor: _statusDotColor,
           statusTooltip: _statusTooltip,
           child: PromptInput(
             fileCount: state.fileCount,
+            initialText: state.takePrefillPrompt(),
             onPickFiles: () => _pickFiles(context),
             onAnalyze: state.analyze,
           ),
@@ -115,6 +136,7 @@ class OverlayRoot extends StatelessWidget {
         return OverlayWindow(
           onClose: onDismiss,
           onSettings: state.openSettings,
+          onHome: state.showHome,
           statusDotColor: _statusDotColor,
           statusTooltip: _statusTooltip,
           child: ResultsView(
@@ -122,21 +144,6 @@ class OverlayRoot extends StatelessWidget {
             verificationStatus: state.verification,
             onCopyInsert: onDismiss,
             onEdit: state.showInput,
-          ),
-        );
-      case OverlayView.settings:
-        final profile = state.profile;
-        if (profile == null) return const SizedBox.shrink();
-        return OverlayWindow(
-          onClose: state.closeSettings,
-          child: SettingsScreen(
-            profile: profile,
-            usageThisMonth: state.usageThisMonth,
-            onSave: (p) {
-              state.saveProfile(p);
-              state.closeSettings();
-            },
-            onClearHistory: state.clearProjectHistory,
           ),
         );
     }
@@ -178,12 +185,12 @@ class _RedactionNotice extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.surfaceHigh.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(100),
-        border: Border.all(color: AppTheme.signalGreen.withValues(alpha: 0.4)),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.lock_outline, size: 14, color: AppTheme.signalGreen),
+          const Icon(Icons.lock_outline, size: 14, color: AppTheme.accent),
           const SizedBox(width: 8),
           Text(
             'Redacted $count potential ${count == 1 ? 'secret' : 'secrets'} — your keys are safe.',

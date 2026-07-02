@@ -85,6 +85,13 @@ class HistoryService {
     await _store.put([...others, ...sameProject]);
   }
 
+  /// Every stored entry across all projects, newest first — feeds the
+  /// dashboard "Recent analyses" list and the History screen.
+  List<PromptHistoryEntry> allEntries() {
+    return _store.all().toList()
+      ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  }
+
   /// All stored entries for a project, oldest first.
   List<PromptHistoryEntry> allFor(String projectPathHash) {
     return _store
@@ -101,6 +108,9 @@ class HistoryService {
     if (all.length <= recentWindow) return all;
     return all.sublist(all.length - recentWindow);
   }
+
+  /// Clear everything (Settings → Data & Privacy, after confirmation).
+  Future<void> clearAll() => _store.put(const []);
 
   /// Clear a single project's history (settings action).
   Future<void> clear(String projectPathHash) async {

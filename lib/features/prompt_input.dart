@@ -13,6 +13,7 @@ class PromptInput extends StatefulWidget {
     required this.onAnalyze,
     required this.onPickFiles,
     this.fileCount = 0,
+    this.initialText,
   });
 
   /// Called with the current rough prompt when Analyze is pressed.
@@ -20,18 +21,22 @@ class PromptInput extends StatefulWidget {
   final VoidCallback onPickFiles;
   final int fileCount;
 
+  /// Pre-filled prompt (quick-template hotkeys).
+  final String? initialText;
+
   @override
   State<PromptInput> createState() => _PromptInputState();
 }
 
 class _PromptInputState extends State<PromptInput> {
-  final _controller = TextEditingController();
+  late final TextEditingController _controller;
   IntentClarity _clarity = IntentClarity.clear;
   String? _validationError;
 
   @override
   void initState() {
     super.initState();
+    _controller = TextEditingController(text: widget.initialText ?? '');
     _controller.addListener(_onChanged);
   }
 
@@ -113,13 +118,13 @@ class _DropZone extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         const Icon(Icons.check_circle_outline,
-                            size: 18, color: AppTheme.signalGreen),
+                            size: 18, color: AppTheme.accent),
                         const SizedBox(width: 8),
                         Text(
                           '$fileCount files loaded',
                           style: AppTheme.ui(
                             size: 13,
-                            color: AppTheme.signalGreen,
+                            color: AppTheme.accent,
                             weight: FontWeight.w500,
                           ),
                         ),

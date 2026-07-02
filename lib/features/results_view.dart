@@ -21,6 +21,7 @@ class ResultsView extends StatelessWidget {
     required this.onEdit,
     this.verificationStatus = VerificationStatus.skipped,
     this.issuesLocked = false,
+    this.readOnly = false,
     this.onUnlock,
     this.onReanalyze,
   });
@@ -29,6 +30,9 @@ class ResultsView extends StatelessWidget {
   final VoidCallback onCopyInsert;
   final VoidCallback onEdit;
   final VerificationStatus verificationStatus;
+
+  /// History detail mode: no Copy & Insert / Edit actions, view only.
+  final bool readOnly;
 
   /// Free-tier: issues shown locked behind an Unlock pill.
   final bool issuesLocked;
@@ -74,23 +78,25 @@ class ResultsView extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              flex: 2,
-              child: GradientButton(
-                label: 'Copy & Insert',
-                trailing: '⌘↵',
-                onPressed: onCopyInsert,
+        if (!readOnly) ...[
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                flex: 2,
+                child: GradientButton(
+                  label: 'Copy & Insert',
+                  trailing: '⌘↵',
+                  onPressed: onCopyInsert,
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: GhostButton(label: 'Edit', onPressed: onEdit),
-            ),
-          ],
-        ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: GhostButton(label: 'Edit', onPressed: onEdit),
+              ),
+            ],
+          ),
+        ],
       ],
     ).animate(delay: 100.ms).fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0);
   }
@@ -215,21 +221,21 @@ class _ImprovedPromptSectionState extends State<_ImprovedPromptSection> {
   @override
   Widget build(BuildContext context) {
     return _ScanLineSection(
-      accent: AppTheme.signalGreen,
+      accent: AppTheme.accent,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Icon(Icons.check_circle_outline,
-                  size: 16, color: AppTheme.signalGreen),
+                  size: 16, color: AppTheme.accent),
               const SizedBox(width: 8),
               Text(
                 'Improved Prompt',
                 style: AppTheme.ui(
                   size: 14,
                   weight: FontWeight.w600,
-                  color: AppTheme.signalGreen,
+                  color: AppTheme.accent,
                 ),
               ),
               if (widget.verified) ...[
@@ -277,11 +283,11 @@ class _CopyButton extends StatelessWidget {
                 key: const ValueKey('copied'),
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.check, size: 14, color: AppTheme.signalGreen),
+                  Icon(Icons.check, size: 14, color: AppTheme.accent),
                   const SizedBox(width: 4),
                   Text('Copied!',
                       style: AppTheme.ui(
-                          size: 11, color: AppTheme.signalGreen)),
+                          size: 11, color: AppTheme.accent)),
                 ],
               )
             : Icon(Icons.copy_outlined,

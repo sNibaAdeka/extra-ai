@@ -7,18 +7,29 @@ import '../security/rate_limiter.dart';
 import '../security/request_validator.dart';
 import '../services/demo_fallback.dart';
 import '../services/extra_ai_request_builder.dart';
+import '../services/favorites_service.dart';
 import '../services/file_service.dart';
 import '../services/gemini_service.dart';
 import '../services/health_check_service.dart';
 import '../services/history_service.dart';
+import '../services/notifications_service.dart';
 import '../services/profile_service.dart';
 import '../services/project_context_service.dart';
+import '../services/settings_service.dart';
+import '../services/template_bindings_service.dart';
 import '../services/verification_service.dart';
 import '../understanding/error_messages.dart';
 import '../understanding/frustration_detector.dart';
 
-/// Which screen the overlay window is showing.
-enum OverlayView { onboarding, input, loading, results, settings }
+/// Which surface the overlay is showing: the compact analysis window
+/// (input/loading/results), the large app shell (home), or onboarding.
+enum OverlayView { onboarding, home, input, loading, results }
+
+/// Sidebar sections inside the app shell.
+enum ShellSection { home, history, templates }
+
+/// Settings modal tabs (Screens 8–13).
+enum SettingsTab { general, shortcuts, profile, plans, privacy, updates }
 
 /// How the current result relates to the two-model quality gate.
 enum VerificationStatus {
@@ -56,6 +67,10 @@ class AppState extends ChangeNotifier {
     HealthCheckService? healthCheckService,
     RateLimiter? rateLimiter,
     bool demoFallbackEnabled = false,
+    this.settings,
+    this.notifications,
+    this.favorites,
+    this.templateBindings,
   })  : _profiles = profileService,
         _projects = projectService,
         _history = historyService,
@@ -75,6 +90,16 @@ class AppState extends ChangeNotifier {
   final HealthCheckService? _healthChecker;
   final RateLimiter _rateLimiter;
 
+  /// Shell-surface services (dashboard/history/templates/settings). Nullable
+  /// so the compact analysis flow stays constructible in isolation.
+  final SettingsService? settings;
+  final NotificationsService? notifications;
+  final FavoritesService? favorites;
+  final TemplateBindingsService? templateBindings;
+
+  HistoryService get history => _history;
+  ProfileService get profiles => _profiles;
+
   /// DEMO-ONLY: see demo_fallback.dart. Off in all normal builds.
   final bool _demoFallbackEnabled;
 
@@ -82,7 +107,21 @@ class AppState extends ChangeNotifier {
   late OverlayView _view;
   OverlayView get view => _view;
 
-  OverlayView _previousView = OverlayView.input;
+  ShellSection _shellSection = ShellSection.home;
+  ShellSection get shellSection => _shellSection;
+
+  bool _settingsOpen = false;
+  bool get settingsOpen => _settingsOpen;
+  SettingsTab _settingsTab = SettingsTab.general;
+  SettingsTab get settingsTab => _settingsTab;
+
+  /// Rough prompt pre-filled into the input view (quick-template hotkeys).
+  String? _prefillPrompt;
+  String? takePrefillPrompt() {
+    final p = _prefillPrompt;
+    _prefillPrompt = null;
+    return p;
+  }
 
   // ---- Loaded project -------------------------------------------------------
   LoadedProject? _project;
@@ -129,12 +168,40 @@ class AppState extends ChangeNotifier {
   // ---- Navigation -----------------------------------------------------------
   void showInput() => _setView(OverlayView.input);
 
-  void openSettings() {
-    _previousView = _view;
-    _setView(OverlayView.settings);
+  void showHome([ShellSection? section]) {
+    if (section != null) _shellSection = section;
+    _setView(OverlayView.home);
   }
 
-  void closeSettings() => _setView(_previousView);
+  void setShellSection(ShellSection section) {
+    _shellSection = section;
+    notifyListeners();
+  }
+
+  /// Opens the settings modal (over the shell). Reachable from anywhere.
+  void openSettings([SettingsTab tab = SettingsTab.general]) {
+    _settingsTab = tab;
+    _settingsOpen = true;
+    if (_view != OverlayView.home) _view = OverlayView.home;
+    notifyListeners();
+  }
+
+  void setSettingsTab(SettingsTab tab) {
+    _settingsTab = tab;
+    notifyListeners();
+  }
+
+  void closeSettings() {
+    _settingsOpen = false;
+    notifyListeners();
+  }
+
+  /// Quick-template hotkey fired: open the input pre-filled with the canned
+  /// prompt for that analysis type.
+  void startTemplateAnalysis(String cannedPrompt) {
+    _prefillPrompt = cannedPrompt;
+    _setView(OverlayView.input);
+  }
 
   void _setView(OverlayView v) {
     _view = v;
@@ -144,7 +211,7 @@ class AppState extends ChangeNotifier {
   // ---- Onboarding -----------------------------------------------------------
   Future<void> completeOnboarding(UserProfile profile) async {
     await _profiles.save(profile);
-    _setView(OverlayView.input);
+    _setView(OverlayView.home);
   }
 
   Future<void> saveProfile(UserProfile profile) async {
@@ -166,6 +233,12 @@ class AppState extends ChangeNotifier {
   // ---- History clearing -----------------------------------------------------
   Future<void> clearProjectHistory() async {
     await _history.clear(_projectPath.hashCode.toString());
+    notifyListeners();
+  }
+
+  /// Deletes every stored analysis (destructive; caller confirms first).
+  Future<void> clearAllHistory() async {
+    await _history.clearAll();
     notifyListeners();
   }
 

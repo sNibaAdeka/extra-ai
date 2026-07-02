@@ -13,8 +13,13 @@ import 'services/gemini_service.dart';
 import 'services/health_check_service.dart';
 import 'services/history_service.dart';
 import 'services/knowledge_base_service.dart';
+import 'services/favorites_service.dart';
+import 'services/hotkey_combo.dart';
+import 'services/notifications_service.dart';
 import 'services/profile_service.dart';
 import 'services/project_context_service.dart';
+import 'services/settings_service.dart';
+import 'services/template_bindings_service.dart';
 import 'services/verification_service.dart';
 import 'theme/app_theme.dart';
 
@@ -59,6 +64,10 @@ Future<void> main() async {
   final profileBox = await Hive.openBox(ProfileService.boxName);
   final projectBox = await Hive.openBox(ProjectContextService.boxName);
   final historyBox = await Hive.openBox(HiveHistoryStore.boxName);
+  final settingsBox = await Hive.openBox(SettingsService.boxName);
+  final notificationsBox = await Hive.openBox(NotificationsService.boxName);
+  final favoritesBox = await Hive.openBox(FavoritesService.boxName);
+  final bindingsBox = await Hive.openBox(TemplateBindingsService.boxName);
 
   // --- Knowledge base (bundled, loaded once) --------------------------------
   await KnowledgeBaseService.loadAll();
@@ -70,6 +79,10 @@ Future<void> main() async {
     apiKey: _azureKey,
     deployment: _azureDeployment,
   );
+  final notifications = NotificationsService(notificationsBox);
+  await notifications.seedIfNeeded();
+  final templateBindings = TemplateBindingsService(bindingsBox);
+
   final appState = AppState(
     profileService: ProfileService(profileBox),
     projectService: ProjectContextService(projectBox),
@@ -81,24 +94,57 @@ Future<void> main() async {
       criticProbe: critic.isConfigured ? critic.healthCheck : null,
     ),
     demoFallbackEnabled: _demoFallbackEnabled,
+    settings: SettingsService(settingsBox),
+    notifications: notifications,
+    favorites: FavoritesService(favoritesBox),
+    templateBindings: templateBindings,
   );
 
   // Silent background health probe — a broken key surfaces as a calm amber
   // dot in the window header, never as a mid-demo surprise.
   unawaited(appState.runHealthCheck());
 
-  // --- Global hotkey ⌘⇧E -----------------------------------------------------
+  // --- Global hotkeys ---------------------------------------------------------
   final overlayController = OverlayController(appState);
-  await hotKeyManager.unregisterAll();
-  final hotKey = HotKey(
-    key: PhysicalKeyboardKey.keyE,
-    modifiers: [HotKeyModifier.meta, HotKeyModifier.shift],
-    scope: HotKeyScope.system,
-  );
-  await hotKeyManager.register(
-    hotKey,
-    keyDownHandler: (_) => overlayController.toggle(),
-  );
+
+  Future<void> registerHotkeys() async {
+    await hotKeyManager.unregisterAll();
+
+    // Analysis hotkey (user-configurable, default ⌘⇧E).
+    final analysisCombo =
+        parseCombo(appState.settings?.hotkeyCombo ?? '⌘⇧E') ??
+            HotKey(
+              key: PhysicalKeyboardKey.keyE,
+              modifiers: [HotKeyModifier.meta, HotKeyModifier.shift],
+              scope: HotKeyScope.system,
+            );
+    await hotKeyManager.register(
+      analysisCombo,
+      keyDownHandler: (_) => overlayController.toggle(),
+    );
+
+    // Quick-template bindings: fire → overlay opens pre-filled with the
+    // template's canned prompt.
+    for (final entry in templateBindings.all.entries) {
+      final hk = parseCombo(entry.value);
+      if (hk == null) continue;
+      final template = kQuickTemplates.firstWhere(
+        (t) => t.id == entry.key,
+        orElse: () => kQuickTemplates.first,
+      );
+      try {
+        await hotKeyManager.register(hk, keyDownHandler: (_) async {
+          appState.startTemplateAnalysis(template.cannedPrompt);
+          await overlayController.show();
+        });
+      } catch (_) {
+        // Combo already taken by the OS/another app — binding stays visible
+        // in Quick Templates; registration is best-effort.
+      }
+    }
+  }
+
+  await registerHotkeys();
 
   // Dev aid: show the overlay immediately on launch (for screenshots / manual
   // review) without needing the global hotkey + accessibility permission.
@@ -107,7 +153,11 @@ Future<void> main() async {
     await overlayController.show();
   }
 
-  runApp(ExtraAIApp(state: appState, controller: overlayController));
+  runApp(ExtraAIApp(
+    state: appState,
+    controller: overlayController,
+    onBindingsChanged: () => unawaited(registerHotkeys()),
+  ));
 }
 
 /// Owns the show/hide state of the overlay window and syncs it to
@@ -153,10 +203,16 @@ class OverlayController extends ChangeNotifier {
 }
 
 class ExtraAIApp extends StatelessWidget {
-  const ExtraAIApp({super.key, required this.state, required this.controller});
+  const ExtraAIApp({
+    super.key,
+    required this.state,
+    required this.controller,
+    this.onBindingsChanged,
+  });
 
   final AppState state;
   final OverlayController controller;
+  final VoidCallback? onBindingsChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -174,10 +230,18 @@ class ExtraAIApp extends StatelessWidget {
           return Scaffold(
             backgroundColor: Colors.transparent,
             body: _EscapeToClose(
-              onEscape: controller.hide,
+              // Escape closes the settings modal first, then the overlay.
+              onEscape: () {
+                if (state.settingsOpen) {
+                  state.closeSettings();
+                } else {
+                  controller.hide();
+                }
+              },
               child: OverlayRoot(
                 state: state,
                 onDismiss: controller.hide,
+                onBindingsChanged: onBindingsChanged,
               ),
             ),
           );

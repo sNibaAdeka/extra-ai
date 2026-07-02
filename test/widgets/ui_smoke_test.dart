@@ -131,17 +131,44 @@ void main() {
     expect(find.text('Verified'), findsNothing);
   });
 
-  testWidgets('Onboarding gates Continue until a choice is made',
+  testWidgets('Onboarding walks 3 steps and gates the final CTA',
       (tester) async {
     UserProfile? completed;
-    await tester.pumpWidget(_host(OnboardingFlow(
-      onComplete: (p) => completed = p,
-    )));
-    // First step: no selection yet — tapping Continue should not advance.
-    expect(find.textContaining('coding experience'), findsOneWidget);
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: SizedBox(
+          width: 980,
+          height: 640,
+          child: OnboardingFlow(onComplete: (p) => completed = p),
+        ),
+      ),
+    ));
+    // Step 1 — welcome.
+    expect(find.text('Welcome to Extra AI'), findsOneWidget);
+    await tester.tap(find.text('Get started'));
+    await tester.pumpAndSettle();
+    // Step 2 — hotkey.
+    expect(find.text('Set your hotkey'), findsOneWidget);
     await tester.tap(find.text('Continue'));
-    await tester.pump();
-    expect(find.textContaining('coding experience'), findsOneWidget);
-    expect(completed, isNull);
+    await tester.pumpAndSettle();
+    // Step 3 — questions; CTA disabled until required selections made.
+    expect(find.text('A few quick questions'), findsOneWidget);
+    Future<void> tapVisible(String text) async {
+      await tester.ensureVisible(find.text(text));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(text));
+      await tester.pump();
+    }
+
+    await tapVisible('Start using Extra AI');
+    expect(completed, isNull); // gated
+
+    await tapVisible('I vibe-code');
+    await tapVisible('Cursor');
+    await tapVisible('SaaS');
+    await tapVisible('Start using Extra AI');
+    expect(completed, isNotNull);
+    expect(completed!.primaryTools, contains('Cursor'));
+    expect(completed!.tonePreference, ToneLevel.explained); // default kept
   });
 }

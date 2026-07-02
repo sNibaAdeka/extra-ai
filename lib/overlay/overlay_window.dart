@@ -15,6 +15,7 @@ class OverlayWindow extends StatelessWidget {
     required this.child,
     this.onClose,
     this.onSettings,
+    this.onHome,
     this.statusDotColor,
     this.statusTooltip,
     this.width = 380,
@@ -24,6 +25,9 @@ class OverlayWindow extends StatelessWidget {
   final Widget child;
   final VoidCallback? onClose;
   final VoidCallback? onSettings;
+
+  /// Opens the app shell (dashboard) from the compact analysis window.
+  final VoidCallback? onHome;
 
   /// Calm service-health indicator next to the settings gear (amber when a
   /// backing service is degraded). Null hides the dot entirely.
@@ -48,6 +52,7 @@ class OverlayWindow extends StatelessWidget {
               _Header(
                 onClose: onClose,
                 onSettings: onSettings,
+                onHome: onHome,
                 statusDotColor: statusDotColor,
                 statusTooltip: statusTooltip,
               ),
@@ -75,12 +80,14 @@ class _Header extends StatelessWidget {
   const _Header({
     this.onClose,
     this.onSettings,
+    this.onHome,
     this.statusDotColor,
     this.statusTooltip,
   });
 
   final VoidCallback? onClose;
   final VoidCallback? onSettings;
+  final VoidCallback? onHome;
   final Color? statusDotColor;
   final String? statusTooltip;
 
@@ -97,6 +104,12 @@ class _Header extends StatelessWidget {
             style: AppTheme.display(size: 16, weight: FontWeight.w600),
           ),
           const Spacer(),
+          if (onHome != null)
+            _IconButton(
+              icon: Icons.grid_view_outlined,
+              tooltip: 'Dashboard',
+              onTap: onHome!,
+            ),
           if (statusDotColor != null)
             Tooltip(
               message: statusTooltip ?? 'Service status',
