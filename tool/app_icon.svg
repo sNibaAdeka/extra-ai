@@ -1,0 +1,43 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Warm near-black background, matching bgVoid #170D12 -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#20111A"/>
+      <stop offset="1" stop-color="#12080D"/>
+    </linearGradient>
+    <!-- Ember brand gradient: accent #FF6B35 -> deep #D94F1E -->
+    <linearGradient id="ember" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FF6B35"/>
+      <stop offset="1" stop-color="#D94F1E"/>
+    </linearGradient>
+    <!-- Subtle inner highlight at the top edge (macOS depth) -->
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="0.35" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- macOS squircle plate: ~185px corner radius on a 1024 canvas with margin -->
+  <g>
+    <rect x="92" y="92" width="840" height="840" rx="188" ry="188" fill="url(#bg)"/>
+    <rect x="92" y="92" width="840" height="840" rx="188" ry="188" fill="url(#sheen)"/>
+    <rect x="92.5" y="92.5" width="839" height="839" rx="187.5" ry="187.5"
+          fill="none" stroke="#FF6B35" stroke-opacity="0.18" stroke-width="1.5"/>
+  </g>
+
+  <!-- Bracket-cursor mark, centered. Round caps/joins to echo the Flutter painter. -->
+  <g stroke="url(#ember)" stroke-width="56" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Left bracket [ -->
+    <path d="M 408 344 L 356 344 Q 340 344 340 360 L 340 664 Q 340 680 356 680 L 408 680"/>
+    <!-- Right bracket ] -->
+    <path d="M 616 344 L 668 344 Q 684 344 684 360 L 684 664 Q 684 680 668 680 L 616 680"/>
+  </g>
+
+  <!-- Glowing white cursor | — glow rendered as stacked translucent strokes
+       (Quick Look's SVG rasterizer ignores feGaussianBlur filters). -->
+  <g stroke-linecap="round">
+    <line x1="512" y1="384" x2="512" y2="640" stroke="#FF6B35" stroke-width="30" stroke-opacity="0.25"/>
+    <line x1="512" y1="388" x2="512" y2="636" stroke="#FFFFFF" stroke-width="20" stroke-opacity="0.30"/>
+    <line x1="512" y1="392" x2="512" y2="632" stroke="#FFFFFF" stroke-width="10"/>
+  </g>
+</svg>
