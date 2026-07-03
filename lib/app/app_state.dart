@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../models/extra_ai_response.dart';
+import '../models/project_context.dart';
 import '../models/prompt_history_entry.dart';
 import '../models/user_profile.dart';
 import '../security/rate_limiter.dart';
@@ -99,6 +100,7 @@ class AppState extends ChangeNotifier {
 
   HistoryService get history => _history;
   ProfileService get profiles => _profiles;
+  ProjectContextService get projectService => _projects;
 
   /// DEMO-ONLY: see demo_fallback.dart. Off in all normal builds.
   final bool _demoFallbackEnabled;
@@ -132,6 +134,31 @@ class AppState extends ChangeNotifier {
   /// never leaves the device — the request uses the redacted concatenation.
   Map<String, String> _rawFiles = const {};
   String _projectPath = 'untitled';
+
+  // ---- Linked projects (overlay picker) -------------------------------------
+  /// All linked projects, for the overlay's "Working on:" picker.
+  List<ProjectContext> get linkedProjects => _projects.all();
+
+  /// The project the overlay is currently scoped to (its pathHash), persisted
+  /// as the default for next time. Null = none selected.
+  String? get selectedProjectHash => settings?.selectedProjectHash;
+
+  ProjectContext? get selectedProject {
+    final hash = selectedProjectHash;
+    if (hash == null) return null;
+    for (final p in linkedProjects) {
+      if (p.pathHash == hash) return p;
+    }
+    return null;
+  }
+
+  /// Selects the active project for the overlay and remembers it.
+  Future<void> selectProject(String pathHash) async {
+    await settings?.setSelectedProjectHash(pathHash);
+    final p = selectedProject;
+    if (p != null) _projectPath = p.projectPath;
+    notifyListeners();
+  }
 
   // ---- Results / errors -----------------------------------------------------
   ExtraAIResponse? _response;

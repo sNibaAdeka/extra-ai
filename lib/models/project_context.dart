@@ -8,6 +8,7 @@ class ProjectContext {
     required this.firstSeenAt,
     required this.lastAnalyzedAt,
     required this.totalAnalysesCount,
+    this.linkedAtOnboarding = false,
   });
 
   final String projectPath;
@@ -17,8 +18,21 @@ class ProjectContext {
   final DateTime lastAnalyzedAt;
   final int totalAnalysesCount;
 
+  /// True when the user linked this project during the onboarding step.
+  final bool linkedAtOnboarding;
+
   /// Stable key for Hive storage — a hash of the project path.
   String get pathHash => projectPath.hashCode.toString();
+
+  /// Folder name (last path segment) for display.
+  String get displayName {
+    final normalized = projectPath.replaceAll('\\', '/');
+    final trimmed = normalized.endsWith('/')
+        ? normalized.substring(0, normalized.length - 1)
+        : normalized;
+    final idx = trimmed.lastIndexOf('/');
+    return idx == -1 ? trimmed : trimmed.substring(idx + 1);
+  }
 
   ProjectContext copyWith({
     String? projectPath,
@@ -27,6 +41,7 @@ class ProjectContext {
     DateTime? firstSeenAt,
     DateTime? lastAnalyzedAt,
     int? totalAnalysesCount,
+    bool? linkedAtOnboarding,
   }) {
     return ProjectContext(
       projectPath: projectPath ?? this.projectPath,
@@ -35,6 +50,7 @@ class ProjectContext {
       firstSeenAt: firstSeenAt ?? this.firstSeenAt,
       lastAnalyzedAt: lastAnalyzedAt ?? this.lastAnalyzedAt,
       totalAnalysesCount: totalAnalysesCount ?? this.totalAnalysesCount,
+      linkedAtOnboarding: linkedAtOnboarding ?? this.linkedAtOnboarding,
     );
   }
 
@@ -45,6 +61,7 @@ class ProjectContext {
         'firstSeenAt': firstSeenAt.toIso8601String(),
         'lastAnalyzedAt': lastAnalyzedAt.toIso8601String(),
         'totalAnalysesCount': totalAnalysesCount,
+        'linkedAtOnboarding': linkedAtOnboarding,
       };
 
   factory ProjectContext.fromMap(Map<String, dynamic> map) => ProjectContext(
@@ -57,5 +74,6 @@ class ProjectContext {
             DateTime.tryParse(map['lastAnalyzedAt'] as String? ?? '') ??
                 DateTime.now(),
         totalAnalysesCount: map['totalAnalysesCount'] as int? ?? 0,
+        linkedAtOnboarding: map['linkedAtOnboarding'] as bool? ?? false,
       );
 }

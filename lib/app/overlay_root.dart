@@ -4,10 +4,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import '../features/loading_view.dart';
-import '../features/onboarding/onboarding_flow.dart';
+import '../features/overlay/project_picker.dart';
 import '../features/prompt_input.dart';
 import '../features/results_view.dart';
-import '../features/shell/app_shell.dart';
 import '../overlay/overlay_window.dart';
 import '../overlay/screen_border.dart';
 import '../theme/app_theme.dart';
@@ -95,33 +94,29 @@ class OverlayRoot extends StatelessWidget {
 
   Widget _window(BuildContext context) {
     switch (state.view) {
-      case OverlayView.onboarding:
-        return OverlayWindow(
-          width: 920,
-          height: 620,
-          child: OnboardingFlow(
-            onComplete: state.completeOnboarding,
-            onHotkeyChanged: (combo) => state.settings?.setHotkeyCombo(combo),
-          ),
-        );
-      case OverlayView.home:
-        return AppShell(
-          state: state,
-          onNewAnalysis: state.showInput,
-          onBindingsChanged: onBindingsChanged,
-        );
       case OverlayView.input:
         return OverlayWindow(
           onClose: onDismiss,
-          onSettings: state.openSettings,
-          onHome: state.showHome,
           statusDotColor: _statusDotColor,
           statusTooltip: _statusTooltip,
-          child: PromptInput(
-            fileCount: state.fileCount,
-            initialText: state.takePrefillPrompt(),
-            onPickFiles: () => _pickFiles(context),
-            onAnalyze: state.analyze,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ProjectPicker(
+                projects: state.linkedProjects,
+                selected: state.selectedProject,
+                onSelect: state.selectProject,
+                onAddProject: () => _addProject(context),
+              ),
+              Expanded(
+                child: PromptInput(
+                  fileCount: state.fileCount,
+                  initialText: state.takePrefillPrompt(),
+                  onPickFiles: () => _pickFiles(context),
+                  onAnalyze: state.analyze,
+                ),
+              ),
+            ],
           ),
         );
       case OverlayView.loading:
@@ -135,8 +130,6 @@ class OverlayRoot extends StatelessWidget {
       case OverlayView.results:
         return OverlayWindow(
           onClose: onDismiss,
-          onSettings: state.openSettings,
-          onHome: state.showHome,
           statusDotColor: _statusDotColor,
           statusTooltip: _statusTooltip,
           child: ResultsView(
@@ -146,7 +139,34 @@ class OverlayRoot extends StatelessWidget {
             onEdit: state.showInput,
           ),
         );
+      // The overlay never hosts onboarding or the app shell — those live in
+      // the main window (Window 1). Fall back to input defensively.
+      case OverlayView.onboarding:
+      case OverlayView.home:
+        return OverlayWindow(
+          onClose: onDismiss,
+          child: PromptInput(
+            fileCount: state.fileCount,
+            onPickFiles: () => _pickFiles(context),
+            onAnalyze: state.analyze,
+          ),
+        );
     }
+  }
+
+  /// "+ Add new project" from the overlay picker — pick a folder, link it,
+  /// and select it as active.
+  Future<void> _addProject(BuildContext context) async {
+    final path = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Pick a project folder',
+    );
+    if (path == null) return;
+    final linked = await state.projectService.link(
+      projectPath: path,
+      fileNames: const [],
+      detectedStack: 'Unknown',
+    );
+    await state.selectProject(linked.pathHash);
   }
 
   Future<void> _pickFiles(BuildContext context) async {

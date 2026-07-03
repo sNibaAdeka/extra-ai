@@ -29,6 +29,23 @@ class SettingsService {
   String get hotkeyCombo => _box.get('hotkeyCombo', defaultValue: '⌘⇧E');
   Future<void> setHotkeyCombo(String v) => _box.put('hotkeyCombo', v);
 
+  /// Whether the user has passed the project-linking onboarding step (even if
+  /// they skipped it) — gates the main-window funnel.
+  bool get linkingComplete =>
+      _box.get('linkingComplete', defaultValue: false);
+  Future<void> setLinkingComplete(bool v) => _box.put('linkingComplete', v);
+
+  /// The last project selected in the overlay's project picker (its pathHash),
+  /// remembered as the default next time the overlay opens.
+  String? get selectedProjectHash => _box.get('selectedProjectHash') as String?;
+  Future<void> setSelectedProjectHash(String? hash) async {
+    if (hash == null) {
+      await _box.delete('selectedProjectHash');
+    } else {
+      await _box.put('selectedProjectHash', hash);
+    }
+  }
+
   // --- Experimental ------------------------------------------------------------
   bool get visualGrounding => _box.get('visualGrounding', defaultValue: false);
   Future<void> setVisualGrounding(bool v) => _box.put('visualGrounding', v);

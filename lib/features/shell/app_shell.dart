@@ -42,11 +42,11 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final entries = state.history.allEntries();
 
+    // Fills its parent — the shell now lives in the normal main window
+    // (Window 1), so it expands to the window size rather than a fixed panel.
     return Container(
-      width: 1040,
-      height: 660,
       clipBehavior: Clip.antiAlias,
-      decoration: AppTheme.glassPanel(radius: 18),
+      color: AppTheme.bgVoid,
       child: Stack(
         children: [
           Row(

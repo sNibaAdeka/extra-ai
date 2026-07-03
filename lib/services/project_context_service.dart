@@ -23,6 +23,44 @@ class ProjectContextService {
     return null;
   }
 
+  /// All known projects, most-recently-analyzed first — feeds the overlay's
+  /// project picker and the linking screen's "already linked" state.
+  List<ProjectContext> all() {
+    final out = _box.values
+        .whereType<Map>()
+        .map((m) => ProjectContext.fromMap(Map<String, dynamic>.from(m)))
+        .toList();
+    out.sort((a, b) => b.lastAnalyzedAt.compareTo(a.lastAnalyzedAt));
+    return out;
+  }
+
+  /// Links a project the user picked during onboarding (or via the overlay's
+  /// "+ Add project"). Detects the stack from a shallow file listing.
+  Future<ProjectContext> link({
+    required String projectPath,
+    required List<String> fileNames,
+    required String detectedStack,
+    bool atOnboarding = false,
+  }) async {
+    final now = DateTime.now();
+    final existing = get(projectPath);
+    final context = existing?.copyWith(
+          fileNames: fileNames,
+          detectedStack: detectedStack,
+        ) ??
+        ProjectContext(
+          projectPath: projectPath,
+          detectedStack: detectedStack,
+          fileNames: fileNames,
+          firstSeenAt: now,
+          lastAnalyzedAt: now,
+          totalAnalysesCount: 0,
+          linkedAtOnboarding: atOnboarding,
+        );
+    await _box.put(context.pathHash, context.toMap());
+    return context;
+  }
+
   /// Detects (or refreshes) the context for a set of dropped files under a
   /// project path, incrementing the analysis count and persisting it.
   Future<ProjectContext> observe({
