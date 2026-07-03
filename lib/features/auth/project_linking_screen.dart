@@ -18,10 +18,15 @@ class ProjectLinkingScreen extends StatefulWidget {
     super.key,
     required this.projects,
     required this.onContinue,
+    this.detectOverride,
   });
 
   final ProjectContextService projects;
   final VoidCallback onContinue;
+
+  /// Test/preview seam: supply detected projects instead of scanning the real
+  /// filesystem. Null in production (a real scan runs).
+  final Future<List<DetectedProject>> Function()? detectOverride;
 
   @override
   State<ProjectLinkingScreen> createState() => _ProjectLinkingScreenState();
@@ -39,7 +44,8 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
   }
 
   Future<void> _scan() async {
-    final found = await ProjectDetectionService.detectAll();
+    final found = await (widget.detectOverride?.call() ??
+        ProjectDetectionService.detectAll());
     if (!mounted) return;
     setState(() {
       _detected = found;
@@ -77,16 +83,34 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
     widget.onContinue();
   }
 
+  bool get _allChecked =>
+      _detected.isNotEmpty && _checked.length == _detected.length;
+
+  void _toggleAll() {
+    setState(() {
+      if (_allChecked) {
+        _checked.clear();
+      } else {
+        _checked
+          ..clear()
+          ..addAll(_detected.map((d) => d.path));
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Center(
+    // Full-height column: fixed header + scrollable list + pinned footer, so a
+    // long list scrolls inside its own area and never collides with the
+    // buttons (which stay anchored at the bottom).
+    return Align(
+      alignment: Alignment.topCenter,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 560),
+        constraints: const BoxConstraints(maxWidth: 600),
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: const EdgeInsets.fromLTRB(40, 40, 40, 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
             children: [
               Text('Link your projects',
                   style: AppTheme.display(size: 30, weight: FontWeight.w600)),
@@ -96,9 +120,36 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
                 'Pick which ones to link — you can add more anytime.',
                 style: AppTheme.ui(size: 14, color: AppTheme.textSecondary),
               ),
-              const SizedBox(height: 22),
-              Flexible(child: _body()),
-              const SizedBox(height: 20),
+              const SizedBox(height: 18),
+
+              // Row: count + "Link all / Clear all" toggle.
+              if (_detected.isNotEmpty) ...[
+                Row(
+                  children: [
+                    Text(
+                      '${_detected.length} detected'
+                      '${_checked.isEmpty ? '' : ' · ${_checked.length} selected'}',
+                      style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+                    ),
+                    const Spacer(),
+                    PressableScale(
+                      onTap: _toggleAll,
+                      child: Text(
+                        _allChecked ? 'Clear all' : 'Link all projects',
+                        style: AppTheme.ui(
+                          size: 12,
+                          weight: FontWeight.w600,
+                          color: AppTheme.accent,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
+
+              Expanded(child: _body()),
+              const SizedBox(height: 18),
               Row(
                 children: [
                   if (_detected.isNotEmpty)
@@ -111,7 +162,9 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
                   SizedBox(
                     width: 200,
                     child: GradientButton(
-                      label: _checked.isEmpty ? 'Skip for now' : 'Continue',
+                      label: _checked.isEmpty
+                          ? (_detected.isEmpty ? 'Skip for now' : 'Skip')
+                          : 'Link ${_checked.length} & continue',
                       onPressed: _linkAndContinue,
                     ),
                   ),
@@ -172,7 +225,7 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
     }
 
     return ListView.separated(
-      shrinkWrap: true,
+      padding: EdgeInsets.zero,
       itemCount: _detected.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
@@ -228,11 +281,14 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
         width: 20,
         height: 20,
         decoration: BoxDecoration(
-          color: checked ? AppTheme.accent : Colors.transparent,
+          color: checked ? AppTheme.accent : AppTheme.bgVoid,
           borderRadius: BorderRadius.circular(6),
-          border: checked
-              ? null
-              : Border.all(color: AppTheme.textDim.withValues(alpha: 0.6)),
+          border: Border.all(
+            color: checked
+                ? AppTheme.accent
+                : AppTheme.textSecondary.withValues(alpha: 0.55),
+            width: 1.5,
+          ),
         ),
         child: checked
             ? const Icon(Icons.check, size: 14, color: AppTheme.onAccent)
