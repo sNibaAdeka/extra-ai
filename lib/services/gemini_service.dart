@@ -29,7 +29,9 @@ class GeminiPromptModel implements PromptModel {
   GeminiPromptModel({
     required String apiKey,
     String modelName = 'gemini-2.5-flash',
-    Duration timeout = const Duration(seconds: 15),
+    // 2.5-flash "thinks" before answering (~13-25s with context), so the
+    // budget is generous. The outer ReliableApiCaller uses the same window.
+    Duration timeout = const Duration(seconds: 45),
   }) : _timeout = timeout, // ignore: prefer_initializing_formals
        _model = GenerativeModel(
          model: modelName,

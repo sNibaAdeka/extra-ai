@@ -11,7 +11,7 @@ class ReliableApiCaller {
   static Future<T> callWithRetry<T>(
     Future<T> Function() call, {
     int maxAttempts = 2,
-    Duration timeout = const Duration(seconds: 12),
+    Duration timeout = const Duration(seconds: 45),
     Duration backoffBase = const Duration(milliseconds: 500),
   }) async {
     Object? lastError;

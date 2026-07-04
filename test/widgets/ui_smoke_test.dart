@@ -101,7 +101,9 @@ void main() {
     await tester.pump();
     expect(find.text('Reading your screen...'), findsOneWidget);
     expect(find.text('and 4 project files'), findsOneWidget);
-    expect(find.text('Pass 2 · draft'), findsOneWidget);
+    // Minimal loading view shows only the active step as a quiet line.
+    expect(find.text('Verify answer'), findsOneWidget);
+    expect(find.text('Map files'), findsNothing);
   });
 
   testWidgets('ResultsView shows improved prompt and issues', (tester) async {
