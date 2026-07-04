@@ -44,7 +44,8 @@ class SecretRedactor {
 
   /// Redacts secrets, preserving a short recognizable prefix so surrounding
   /// context is not lost. Returns just the redacted string.
-  static String redact(String fileContent) => redactWithCount(fileContent).redacted;
+  static String redact(String fileContent) =>
+      redactWithCount(fileContent).redacted;
 
   /// Redacts secrets and reports how many replacements were made.
   static RedactionResult redactWithCount(String fileContent) {

@@ -4,24 +4,15 @@ import 'package:extra_ai/understanding/frustration_detector.dart';
 void main() {
   group('FrustrationDetector', () {
     test('detects frustration from double exclamation + "still"', () {
-      expect(
-        FrustrationDetector.detect('this is STILL broken!!'),
-        isTrue,
-      );
+      expect(FrustrationDetector.detect('this is STILL broken!!'), isTrue);
     });
 
     test('detects frustration from all-caps + "again"', () {
-      expect(
-        FrustrationDetector.detect('WHY IS THIS BROKEN AGAIN'),
-        isTrue,
-      );
+      expect(FrustrationDetector.detect('WHY IS THIS BROKEN AGAIN'), isTrue);
     });
 
     test('detects Russian frustration signals', () {
-      expect(
-        FrustrationDetector.detect('НЕ РАБОТАЕТ ОПЯТЬ!!'),
-        isTrue,
-      );
+      expect(FrustrationDetector.detect('НЕ РАБОТАЕТ ОПЯТЬ!!'), isTrue);
     });
 
     test('a single signal alone is not enough', () {

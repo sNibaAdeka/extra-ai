@@ -2,13 +2,14 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:window_manager/window_manager.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/logo_mark.dart';
 
-/// The floating glass panel (380x580) that hosts the input / loading / results
-/// views. Provides the header (logo + optional settings + close) and the glass
-/// surface; the body is swapped by the caller. Slides in from the right.
+/// Floating glass panel for loading/results surfaces. The input state uses the
+/// compact composer directly; this keeps secondary states consistent without
+/// reintroducing a fullscreen overlay background.
 class OverlayWindow extends StatelessWidget {
   const OverlayWindow({
     super.key,
@@ -18,7 +19,7 @@ class OverlayWindow extends StatelessWidget {
     this.onHome,
     this.statusDotColor,
     this.statusTooltip,
-    this.width = 380,
+    this.width = 620,
     this.height = 580,
   });
 
@@ -38,7 +39,7 @@ class OverlayWindow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
+    final panel = ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
@@ -58,21 +59,23 @@ class OverlayWindow extends StatelessWidget {
               ),
               const Divider(height: 1, color: AppTheme.borderSubtle),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: child,
-                ),
+                child: Padding(padding: const EdgeInsets.all(16), child: child),
               ),
             ],
           ),
         ),
       ),
-    ).animate().slideX(
-          begin: 0.15,
+    );
+
+    return panel
+        .animate()
+        .slideY(
+          begin: 0.04,
           end: 0,
           duration: 350.ms,
           curve: Curves.easeOutCubic,
-        ).fadeIn(duration: 250.ms);
+        )
+        .fadeIn(duration: 250.ms);
   }
 }
 
@@ -97,13 +100,26 @@ class _Header extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
       child: Row(
         children: [
-          const LogoMark(size: 22),
-          const SizedBox(width: 10),
-          Text(
-            'Extra AI',
-            style: AppTheme.display(size: 16, weight: FontWeight.w600),
+          Expanded(
+            child: _WindowDragRegion(
+              child: SizedBox(
+                height: 30,
+                child: Row(
+                  children: [
+                    const LogoMark(size: 22),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Extra AI',
+                      style: AppTheme.display(
+                        size: 16,
+                        weight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
-          const Spacer(),
           if (onHome != null)
             _IconButton(
               icon: Icons.grid_view_outlined,
@@ -136,12 +152,26 @@ class _Header extends StatelessWidget {
               onTap: onSettings!,
             ),
           if (onClose != null)
-            _IconButton(
-              icon: Icons.close,
-              tooltip: 'Close',
-              onTap: onClose!,
-            ),
+            _IconButton(icon: Icons.close, tooltip: 'Close', onTap: onClose!),
         ],
+      ),
+    );
+  }
+}
+
+class _WindowDragRegion extends StatelessWidget {
+  const _WindowDragRegion({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.move,
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (_) => windowManager.startDragging(),
+        child: child,
       ),
     );
   }

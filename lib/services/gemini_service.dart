@@ -28,17 +28,17 @@ abstract class PromptModel {
 class GeminiPromptModel implements PromptModel {
   GeminiPromptModel({
     required String apiKey,
-    String modelName = 'gemini-2.0-flash',
+    String modelName = 'gemini-2.5-flash',
     Duration timeout = const Duration(seconds: 15),
-  })  : _timeout = timeout, // ignore: prefer_initializing_formals
-        _model = GenerativeModel(
-          model: modelName,
-          apiKey: apiKey,
-          systemInstruction: Content.system(kExtraAiSystemPrompt),
-          generationConfig: GenerationConfig(
-            responseMimeType: 'application/json',
-          ),
-        );
+  }) : _timeout = timeout, // ignore: prefer_initializing_formals
+       _model = GenerativeModel(
+         model: modelName,
+         apiKey: apiKey,
+         systemInstruction: Content.system(kExtraAiSystemPrompt),
+         generationConfig: GenerationConfig(
+           responseMimeType: 'application/json',
+         ),
+       );
 
   final GenerativeModel _model;
   final Duration _timeout;
@@ -51,8 +51,7 @@ class GeminiPromptModel implements PromptModel {
       Content.text(prompt),
     ];
     try {
-      final response =
-          await _model.generateContent(parts).timeout(_timeout);
+      final response = await _model.generateContent(parts).timeout(_timeout);
       return response.text;
     } on TimeoutException {
       throw GeminiTimeout();
@@ -92,9 +91,11 @@ class AnalyzeResult {
 /// Orchestrates a single analysis: calls the model, validates the JSON, retries
 /// once on a bad parse, and maps every error to a FailureType.
 class GeminiService {
-  GeminiService({required PromptModel model}) : _model = model; // ignore: prefer_initializing_formals
+  GeminiService({required PromptModel model, this.modelLabel = 'Gemini'})
+    : _model = model; // ignore: prefer_initializing_formals
 
   final PromptModel _model;
+  final String modelLabel;
 
   Future<AnalyzeResult> analyze({
     required String fullPrompt,
@@ -115,8 +116,8 @@ class GeminiService {
       return AnalyzeResult.failed(FailureType.noApiKey);
     } on UnsupportedUserLocation {
       return AnalyzeResult.failed(FailureType.unknown);
-    } on ServerException {
-      return AnalyzeResult.failed(FailureType.networkTimeout);
+    } on ServerException catch (e) {
+      return AnalyzeResult.failed(_failureForServerException(e));
     } on TimeoutException {
       return AnalyzeResult.failed(FailureType.networkTimeout);
     } catch (_) {
@@ -134,7 +135,8 @@ class GeminiService {
     required String correctionInstruction,
     List<int>? screenshotBytes,
   }) async {
-    final correctivePrompt = '''
+    final correctivePrompt =
+        '''
 $fullPrompt
 
 PREVIOUS DRAFT (JSON):
@@ -157,6 +159,40 @@ problem; keep everything else identical to the previous draft.
     }
   }
 
+  /// One anti-stale pass when Gemini returns a valid but replayed answer from
+  /// project history. This is deliberately separate from [correctDraft]:
+  /// freshness means the draft should be regenerated, not minimally patched.
+  Future<AnalyzeResult> regenerateStaleDraft({
+    required String fullPrompt,
+    required ExtraAIResponse staleDraft,
+    required String roughPrompt,
+    List<int>? screenshotBytes,
+  }) async {
+    final freshnessPrompt =
+        '''
+$fullPrompt
+
+STALE DRAFT THAT MUST NOT BE REUSED:
+${jsonEncode(staleDraft.toJson())}
+
+The draft above appears copied from a previous request. Regenerate the JSON from
+scratch for THIS CURRENT USER PROMPT only:
+"$roughPrompt"
+
+Do not preserve old file targets unless they are clearly relevant to the current
+project files and current user prompt. Return corrected JSON only.
+''';
+    try {
+      final fresh = await _attempt(freshnessPrompt, screenshotBytes);
+      if (fresh != null) return AnalyzeResult.success(fresh);
+      return AnalyzeResult.failed(FailureType.invalidResponse);
+    } on GeminiTimeout {
+      return AnalyzeResult.failed(FailureType.networkTimeout);
+    } catch (_) {
+      return AnalyzeResult.failed(FailureType.unknown);
+    }
+  }
+
   /// One model call + validation. Returns null if the reply is null/invalid.
   /// The network call itself is wrapped with timeout + retry so a single slow
   /// or dropped request never stalls the pipeline.
@@ -170,5 +206,17 @@ problem; keep everything else identical to the previous draft.
     );
     if (raw == null) return null;
     return ResponseValidator.validateAndParse(raw);
+  }
+
+  FailureType _failureForServerException(ServerException e) {
+    final message = e.message.toLowerCase();
+    if (message.contains('resource_exhausted') ||
+        message.contains('quota') ||
+        message.contains('rate') ||
+        message.contains('credit') ||
+        message.contains('billing')) {
+      return FailureType.rateLimited;
+    }
+    return FailureType.networkTimeout;
   }
 }

@@ -40,7 +40,10 @@ class ProfileService {
   }
 
   Future<void> incrementUsage() async {
-    await _box.put(_usageKey, {'month': _currentMonth, 'count': usageThisMonth + 1});
+    await _box.put(_usageKey, {
+      'month': _currentMonth,
+      'count': usageThisMonth + 1,
+    });
   }
 
   static const String _usageKey = 'usage';

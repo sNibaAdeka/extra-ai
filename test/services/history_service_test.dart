@@ -1,4 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:extra_ai/models/analysis_preferences.dart';
+import 'package:extra_ai/models/analysis_trace.dart';
+import 'package:extra_ai/models/project_audit_report.dart';
 import 'package:extra_ai/models/prompt_history_entry.dart';
 import 'package:extra_ai/services/history_service.dart';
 
@@ -19,6 +22,71 @@ void main() {
   });
 
   group('HistoryService', () {
+    test('PromptHistoryEntry preserves optional quality fields', () {
+      final trace = AnalysisTrace(
+        projectName: 'Extra AI',
+        projectPathHash: 'p1',
+        modelLabel: 'gemini-2.5-flash',
+        filesRead: 1,
+        filesSample: const ['app.js'],
+        redactedSecrets: 0,
+        historyEntriesUsed: 0,
+        preferences: const AnalysisPreferences(),
+        recommendedChecks: const ['npm test'],
+        freshnessRegenerated: false,
+        qualityStatus: 'warning',
+        verificationStatus: 'skipped',
+        generatedAt: DateTime(2026, 1, 1),
+      );
+      final entry = PromptHistoryEntry(
+        projectPathHash: 'p1',
+        roughPrompt: 'fix hero',
+        improvedPrompt: 'In @app.js, update hero.',
+        issuesFound: const [],
+        timestamp: DateTime(2026, 1, 1),
+        qualityStatus: 'warning',
+        qualitySummary: 'Prompt does not reference recommended checks.',
+        auditStatus: 'warning',
+        auditSummary: '1 local signal.',
+        auditReport: const ProjectAuditReport(
+          issues: [
+            ProjectAuditIssue(
+              category: ProjectAuditCategory.responsive,
+              severity: ProjectAuditSeverity.warning,
+              title: 'Large fixed width',
+              detail: 'Large fixed widths often break mobile layouts.',
+              file: 'style.css',
+            ),
+          ],
+        ),
+        trace: trace,
+      );
+
+      final restored = PromptHistoryEntry.fromMap(entry.toMap());
+      expect(restored.qualityStatus, 'warning');
+      expect(
+        restored.qualitySummary,
+        'Prompt does not reference recommended checks.',
+      );
+      expect(restored.trace?.modelLabel, 'gemini-2.5-flash');
+      expect(restored.trace?.filesSample, ['app.js']);
+      expect(restored.auditStatus, 'warning');
+      expect(restored.auditReport?.issues.single.file, 'style.css');
+    });
+
+    test('PromptHistoryEntry keeps old records compatible', () {
+      final restored = PromptHistoryEntry.fromMap({
+        'projectPathHash': 'p1',
+        'roughPrompt': 'old',
+        'improvedPrompt': 'old improved',
+        'issuesFound': const [],
+        'timestamp': DateTime(2026, 1, 1).toIso8601String(),
+      });
+
+      expect(restored.qualityStatus, isNull);
+      expect(restored.qualitySummary, isNull);
+    });
+
     test('stores and retrieves entries for a project', () async {
       await history.add(_entry('p1', 'first', DateTime(2026, 1, 1)));
       final recent = history.recentFor('p1');
@@ -64,6 +132,17 @@ void main() {
       await history.clear('p1');
       expect(history.recentFor('p1'), isEmpty);
       expect(history.recentFor('p2'), hasLength(1));
+    });
+
+    test('rekeyProject migrates old project hashes to stable hashes', () async {
+      await history.add(_entry('legacy', 'a', DateTime(2026, 1, 1)));
+
+      await history.rekeyProject(from: 'legacy', to: 'stable');
+
+      expect(history.recentFor('legacy'), isEmpty);
+      final migrated = history.recentFor('stable');
+      expect(migrated, hasLength(1));
+      expect(migrated.first.roughPrompt, 'a');
     });
   });
 }

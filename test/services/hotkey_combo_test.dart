@@ -9,7 +9,10 @@ void main() {
       final hk = parseCombo('⌘⇧E');
       expect(hk, isNotNull);
       expect(hk!.key, PhysicalKeyboardKey.keyE);
-      expect(hk.modifiers, containsAll([HotKeyModifier.meta, HotKeyModifier.shift]));
+      expect(
+        hk.modifiers,
+        containsAll([HotKeyModifier.meta, HotKeyModifier.shift]),
+      );
     });
 
     test('parses digits (⌘⇧1)', () {
@@ -20,8 +23,10 @@ void main() {
     test('parses control and alt glyphs', () {
       final hk = parseCombo('⌃⌥K');
       expect(hk!.key, PhysicalKeyboardKey.keyK);
-      expect(hk.modifiers,
-          containsAll([HotKeyModifier.control, HotKeyModifier.alt]));
+      expect(
+        hk.modifiers,
+        containsAll([HotKeyModifier.control, HotKeyModifier.alt]),
+      );
     });
 
     test('returns null for unsupported keys', () {

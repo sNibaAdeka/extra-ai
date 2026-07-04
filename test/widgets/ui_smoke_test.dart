@@ -6,20 +6,24 @@ import 'package:extra_ai/features/loading_view.dart';
 import 'package:extra_ai/features/onboarding/onboarding_flow.dart';
 import 'package:extra_ai/features/prompt_input.dart';
 import 'package:extra_ai/features/results_view.dart';
+import 'package:extra_ai/models/analysis_preferences.dart';
+import 'package:extra_ai/models/analysis_trace.dart';
 import 'package:extra_ai/models/extra_ai_response.dart';
+import 'package:extra_ai/models/project_audit_report.dart';
+import 'package:extra_ai/models/response_quality_report.dart';
 import 'package:extra_ai/models/user_profile.dart';
 import 'package:extra_ai/widgets/logo_mark.dart';
 import 'package:extra_ai/widgets/pill_widget.dart';
 
 Widget _host(Widget child) => MaterialApp(
-      home: Scaffold(body: SizedBox(width: 380, height: 580, child: child)),
-    );
+  home: Scaffold(body: SizedBox(width: 380, height: 580, child: child)),
+);
 
 void main() {
   testWidgets('LogoMark and PillWidget render', (tester) async {
-    await tester.pumpWidget(_host(const Column(
-      children: [LogoMark(), PillWidget()],
-    )));
+    await tester.pumpWidget(
+      _host(const Column(children: [LogoMark(), PillWidget()])),
+    );
     expect(find.byType(LogoMark), findsWidgets);
     expect(find.text('Extra AI'), findsOneWidget);
     expect(find.text('⌘⇧E'), findsOneWidget);
@@ -27,11 +31,12 @@ void main() {
 
   testWidgets('PromptInput blocks analyze on empty prompt', (tester) async {
     var analyzed = false;
-    await tester.pumpWidget(_host(PromptInput(
-      onAnalyze: (_) => analyzed = true,
-      onPickFiles: () {},
-    )));
-    await tester.tap(find.text('Analyze'));
+    await tester.pumpWidget(
+      _host(
+        PromptInput(onAnalyze: (_, _) => analyzed = true, onPickFiles: () {}),
+      ),
+    );
+    await tester.tap(find.byTooltip('Send prompt'));
     await tester.pump();
     expect(analyzed, isFalse);
     expect(find.text('Write what you want to change first.'), findsOneWidget);
@@ -39,36 +44,64 @@ void main() {
 
   testWidgets('PromptInput forwards a valid prompt', (tester) async {
     String? captured;
-    await tester.pumpWidget(_host(PromptInput(
-      onAnalyze: (p) => captured = p,
-      onPickFiles: () {},
-    )));
+    await tester.pumpWidget(
+      _host(PromptInput(onAnalyze: (p, _) => captured = p, onPickFiles: () {})),
+    );
     await tester.enterText(
-        find.byType(TextField), 'make the hero responsive on mobile');
-    await tester.tap(find.text('Analyze'));
+      find.byType(TextField),
+      'make the hero responsive on mobile',
+    );
+    await tester.tap(find.byTooltip('Send prompt'));
     await tester.pump();
     expect(captured, 'make the hero responsive on mobile');
   });
 
-  testWidgets('PromptInput shows the broad-prompt hint for a vague prompt',
-      (tester) async {
-    await tester.pumpWidget(_host(PromptInput(
-      onAnalyze: (_) {},
-      onPickFiles: () {},
-    )));
+  testWidgets('PromptInput applies initial text and reports it consumed', (
+    tester,
+  ) async {
+    var consumed = false;
+    await tester.pumpWidget(
+      _host(
+        PromptInput(
+          initialText: 'make the overlay smaller',
+          onInitialTextApplied: () => consumed = true,
+          onAnalyze: (_, _) {},
+          onPickFiles: () {},
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('make the overlay smaller'), findsOneWidget);
+    expect(consumed, isTrue);
+  });
+
+  testWidgets('PromptInput shows the broad-prompt hint for a vague prompt', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _host(PromptInput(onAnalyze: (_, _) {}, onPickFiles: () {})),
+    );
     await tester.enterText(find.byType(TextField), 'fix');
     await tester.pump();
     expect(find.textContaining('pretty broad'), findsOneWidget);
   });
 
   testWidgets('LoadingView renders its title', (tester) async {
-    await tester.pumpWidget(_host(const LoadingView(
-      title: 'Reading your screen...',
-      subtitle: 'and 4 project files',
-    )));
+    await tester.pumpWidget(
+      _host(
+        const LoadingView(
+          title: 'Reading your screen...',
+          subtitle: 'and 4 project files',
+          steps: ['Map files', 'Generate prompt', 'Verify answer'],
+          activeStep: 2,
+        ),
+      ),
+    );
     await tester.pump();
     expect(find.text('Reading your screen...'), findsOneWidget);
     expect(find.text('and 4 project files'), findsOneWidget);
+    expect(find.text('Pass 2 · draft'), findsOneWidget);
   });
 
   testWidgets('ResultsView shows improved prompt and issues', (tester) async {
@@ -76,73 +109,196 @@ void main() {
       improvedPrompt: 'Update the .cta button in style.css to purple.',
       issues: ['Missing alt text', 'No mobile breakpoint'],
     );
-    await tester.pumpWidget(_host(ResultsView(
-      response: response,
-      onCopyInsert: () {},
-      onEdit: () {},
-    )));
+    await tester.pumpWidget(
+      _host(
+        ResultsView(response: response, onCopyInsert: () {}, onEdit: () {}),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.textContaining('.cta button'), findsOneWidget);
     expect(find.text('Missing alt text'), findsOneWidget);
-    expect(find.text('Copy & Insert'), findsOneWidget);
+    expect(find.text('Copy Prompt'), findsOneWidget);
   });
 
-  testWidgets('ResultsView shows locked issues + Unlock on free tier',
-      (tester) async {
+  testWidgets('ResultsView shows local quality report', (tester) async {
+    const response = ExtraAIResponse(
+      improvedPrompt: 'In @app.js, update the CTA.',
+      issues: [],
+    );
+    const report = ResponseQualityReport(
+      status: ResponseQualityStatus.warning,
+      passedChecks: ['Prompt is short enough to paste quickly.'],
+      warnings: ['Prompt does not mention the recommended project checks.'],
+      failedChecks: [],
+    );
+
+    await tester.pumpWidget(
+      _host(
+        ResultsView(
+          response: response,
+          qualityReport: report,
+          onCopyInsert: () {},
+          onEdit: () {},
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('Needs review'), findsOneWidget);
+    expect(
+      find.text('Prompt does not mention the recommended project checks.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ResultsView shows collapsible analysis trace', (tester) async {
+    const response = ExtraAIResponse(
+      improvedPrompt: 'In @lib/main.dart, update the prompt.',
+      issues: [],
+    );
+    final trace = AnalysisTrace(
+      projectName: 'Extra AI',
+      projectPathHash: 'p1',
+      modelLabel: 'gemini-2.5-flash',
+      filesRead: 2,
+      filesSample: const ['lib/main.dart', 'lib/app/app_state.dart'],
+      redactedSecrets: 0,
+      historyEntriesUsed: 1,
+      preferences: const AnalysisPreferences(),
+      recommendedChecks: const ['flutter analyze'],
+      freshnessRegenerated: false,
+      qualityStatus: 'passed',
+      verificationStatus: 'skipped',
+      generatedAt: DateTime(2026, 7, 4),
+    );
+
+    await tester.pumpWidget(
+      _host(
+        ResultsView(
+          response: response,
+          trace: trace,
+          onCopyInsert: () {},
+          onEdit: () {},
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.text('How this was made'), findsOneWidget);
+    // Jury-facing collapsed summary — plain language, no internal model name.
+    expect(find.textContaining('Grounded in 2 files'), findsOneWidget);
+    expect(find.textContaining('Secrets checked'), findsOneWidget);
+    expect(find.textContaining('gemini'), findsNothing);
+  });
+
+  testWidgets('ResultsView shows local project audit report', (tester) async {
+    const response = ExtraAIResponse(
+      improvedPrompt: 'In @src/main.tsx, remove eval.',
+      issues: [],
+    );
+    const audit = ProjectAuditReport(
+      issues: [
+        ProjectAuditIssue(
+          category: ProjectAuditCategory.security,
+          severity: ProjectAuditSeverity.high,
+          title: 'Dynamic code execution',
+          detail: 'Avoid eval/new Function unless strictly sandboxed.',
+          file: 'src/main.tsx',
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      _host(
+        ResultsView(
+          response: response,
+          auditReport: audit,
+          onCopyInsert: () {},
+          onEdit: () {},
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(find.textContaining('Local audit'), findsOneWidget);
+    expect(find.textContaining('Dynamic code execution'), findsOneWidget);
+  });
+
+  testWidgets('ResultsView shows locked issues + Unlock on free tier', (
+    tester,
+  ) async {
     const response = ExtraAIResponse(
       improvedPrompt: 'Do the thing.',
       issues: ['Add rate limiting', 'Improve query perf', 'Validate input'],
     );
-    await tester.pumpWidget(_host(ResultsView(
-      response: response,
-      issuesLocked: true,
-      onUnlock: () {},
-      onCopyInsert: () {},
-      onEdit: () {},
-    )));
+    await tester.pumpWidget(
+      _host(
+        ResultsView(
+          response: response,
+          issuesLocked: true,
+          onUnlock: () {},
+          onCopyInsert: () {},
+          onEdit: () {},
+        ),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Unlock'), findsOneWidget);
   });
 
-  testWidgets('ResultsView shows a Verified chip when the critic passed',
-      (tester) async {
+  testWidgets('ResultsView shows a Verified chip when the critic passed', (
+    tester,
+  ) async {
     const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
-    await tester.pumpWidget(_host(ResultsView(
-      response: response,
-      verificationStatus: VerificationStatus.verified,
-      onCopyInsert: () {},
-      onEdit: () {},
-    )));
+    await tester.pumpWidget(
+      _host(
+        ResultsView(
+          response: response,
+          verificationStatus: VerificationStatus.verified,
+          onCopyInsert: () {},
+          onEdit: () {},
+        ),
+      ),
+    );
     await tester.pump(const Duration(milliseconds: 500));
     expect(find.text('Verified'), findsOneWidget);
   });
 
-  testWidgets('ResultsView shows the honest note when the check was unavailable',
-      (tester) async {
-    const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
-    await tester.pumpWidget(_host(ResultsView(
-      response: response,
-      verificationStatus: VerificationStatus.unavailable,
-      onCopyInsert: () {},
-      onEdit: () {},
-    )));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(find.textContaining('Quality check unavailable'), findsOneWidget);
-    expect(find.text('Verified'), findsNothing);
-  });
+  testWidgets(
+    'ResultsView shows the honest note when the check was unavailable',
+    (tester) async {
+      const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
+      await tester.pumpWidget(
+        _host(
+          ResultsView(
+            response: response,
+            verificationStatus: VerificationStatus.unavailable,
+            onCopyInsert: () {},
+            onEdit: () {},
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.textContaining('Quality check unavailable'), findsOneWidget);
+      expect(find.text('Verified'), findsNothing);
+    },
+  );
 
-  testWidgets('Onboarding walks 3 steps and gates the final CTA',
-      (tester) async {
+  testWidgets('Onboarding walks 3 steps and gates the final CTA', (
+    tester,
+  ) async {
     UserProfile? completed;
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: SizedBox(
-          width: 980,
-          height: 640,
-          child: OnboardingFlow(onComplete: (p) => completed = p),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox(
+            width: 980,
+            height: 640,
+            child: OnboardingFlow(onComplete: (p) => completed = p),
+          ),
         ),
       ),
-    ));
+    );
     // Step 1 — welcome.
     expect(find.text('Welcome to Extra AI'), findsOneWidget);
     await tester.tap(find.text('Get started'));

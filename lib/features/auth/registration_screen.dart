@@ -50,15 +50,27 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
       _busy = true;
       _error = null;
     });
-    final result = _signInMode
-        ? await widget.auth
-            .signIn(email: _email.text, password: _password.text)
-        : await widget.auth.register(
-            fullName: _name.text,
-            email: _email.text,
-            password: _password.text,
-            confirm: _confirm.text,
-          );
+    AuthResult result;
+    try {
+      result = _signInMode
+          ? await widget.auth.signIn(
+              email: _email.text,
+              password: _password.text,
+            )
+          : await widget.auth.register(
+              fullName: _name.text,
+              email: _email.text,
+              password: _password.text,
+              confirm: _confirm.text,
+            );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _error = 'Could not save your account locally. Please try again.';
+      });
+      return;
+    }
     if (!mounted) return;
     setState(() => _busy = false);
     if (result.ok) {
@@ -90,12 +102,16 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           Positioned(
             top: 28,
             left: 28,
-            child: Row(children: [
-              const LogoMark(size: 26),
-              const SizedBox(width: 8),
-              Text('Extra AI',
-                  style: AppTheme.display(size: 15, weight: FontWeight.w600)),
-            ]),
+            child: Row(
+              children: [
+                const LogoMark(size: 26),
+                const SizedBox(width: 8),
+                Text(
+                  'Extra AI',
+                  style: AppTheme.display(size: 15, weight: FontWeight.w600),
+                ),
+              ],
+            ),
           ),
           Positioned(
             left: 32,
@@ -113,8 +129,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   ).copyWith(fontStyle: FontStyle.italic, height: 1.3),
                 ),
                 const SizedBox(height: 10),
-                Text('Extra AI',
-                    style: AppTheme.ui(size: 13, color: AppTheme.textSecondary)),
+                Text(
+                  'Extra AI',
+                  style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
+                ),
               ],
             ),
           ),
@@ -138,8 +156,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(_signInMode ? 'Welcome back' : 'Get started',
-                  style: AppTheme.display(size: 30, weight: FontWeight.w600)),
+              Text(
+                _signInMode ? 'Welcome back' : 'Get started',
+                style: AppTheme.display(size: 30, weight: FontWeight.w600),
+              ),
               const SizedBox(height: 6),
               Text(
                 _signInMode
@@ -163,25 +183,32 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               ],
               _field('Email Address', _email),
               const SizedBox(height: 12),
-              _field('Password', _password,
-                  obscure: !_showPassword,
-                  toggleObscure: () =>
-                      setState(() => _showPassword = !_showPassword),
-                  obscured: !_showPassword),
+              _field(
+                'Password',
+                _password,
+                obscure: !_showPassword,
+                toggleObscure: () =>
+                    setState(() => _showPassword = !_showPassword),
+                obscured: !_showPassword,
+              ),
               if (!_signInMode) ...[
                 const SizedBox(height: 12),
-                _field('Confirm Password', _confirm,
-                    obscure: !_showConfirm,
-                    toggleObscure: () =>
-                        setState(() => _showConfirm = !_showConfirm),
-                    obscured: !_showConfirm),
+                _field(
+                  'Confirm Password',
+                  _confirm,
+                  obscure: !_showConfirm,
+                  toggleObscure: () =>
+                      setState(() => _showConfirm = !_showConfirm),
+                  obscured: !_showConfirm,
+                ),
               ],
 
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(_error!,
-                    style:
-                        AppTheme.ui(size: 12, color: AppTheme.signalRed)),
+                Text(
+                  _error!,
+                  style: AppTheme.ui(size: 12, color: AppTheme.signalRed),
+                ),
               ],
               const SizedBox(height: 20),
               GradientButton(
@@ -203,15 +230,17 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       style: AppTheme.ui(size: 13, color: AppTheme.textDim),
                       children: [
                         TextSpan(
-                            text: _signInMode
-                                ? "Don't have an account? "
-                                : 'Already have an account? '),
+                          text: _signInMode
+                              ? "Don't have an account? "
+                              : 'Already have an account? ',
+                        ),
                         TextSpan(
                           text: _signInMode ? 'Create one' : 'Sign In',
                           style: AppTheme.ui(
-                              size: 13,
-                              weight: FontWeight.w600,
-                              color: AppTheme.accent),
+                            size: 13,
+                            weight: FontWeight.w600,
+                            color: AppTheme.accent,
+                          ),
                         ),
                       ],
                     ),
@@ -240,8 +269,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           children: [
             Icon(icon, size: 18, color: AppTheme.textSecondary),
             const SizedBox(width: 8),
-            Text(label,
-                style: AppTheme.ui(size: 13, color: AppTheme.textPrimary)),
+            Text(
+              label,
+              style: AppTheme.ui(size: 13, color: AppTheme.textPrimary),
+            ),
           ],
         ),
       ),
@@ -249,15 +280,19 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   Widget _orDivider() {
-    return Row(children: [
-      const Expanded(child: Divider(color: AppTheme.borderSubtle)),
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child:
-            Text('OR', style: AppTheme.ui(size: 11, color: AppTheme.textDim)),
-      ),
-      const Expanded(child: Divider(color: AppTheme.borderSubtle)),
-    ]);
+    return Row(
+      children: [
+        const Expanded(child: Divider(color: AppTheme.borderSubtle)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(
+            'OR',
+            style: AppTheme.ui(size: 11, color: AppTheme.textDim),
+          ),
+        ),
+        const Expanded(child: Divider(color: AppTheme.borderSubtle)),
+      ],
+    );
   }
 
   Widget _field(
@@ -281,8 +316,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
             isDense: true,
             filled: true,
             fillColor: AppTheme.bgVoid.withValues(alpha: 0.5),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
             suffixIcon: toggleObscure == null
                 ? null
                 : IconButton(

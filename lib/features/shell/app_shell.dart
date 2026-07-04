@@ -40,13 +40,13 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = state.history.allEntries();
+    final entries = state.allHistory();
 
     // Fills its parent — the shell now lives in the normal main window
     // (Window 1), so it expands to the window size rather than a fixed panel.
     return Container(
       clipBehavior: Clip.antiAlias,
-      color: AppTheme.bgVoid,
+      decoration: const BoxDecoration(color: AppTheme.bgVoid),
       child: Stack(
         children: [
           Row(
@@ -106,22 +106,29 @@ class _AppShellState extends State<AppShell> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(children: [
-                      Expanded(
-                        child: Text(
-                          _detailEntry!.roughPrompt,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTheme.ui(
-                              size: 13, color: AppTheme.textDim),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _detailEntry!.roughPrompt,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTheme.ui(
+                              size: 13,
+                              color: AppTheme.textDim,
+                            ),
+                          ),
                         ),
-                      ),
-                      PressableScale(
-                        onTap: () => setState(() => _detailEntry = null),
-                        child: const Icon(Icons.close,
-                            size: 16, color: AppTheme.textSecondary),
-                      ),
-                    ]),
+                        PressableScale(
+                          onTap: () => setState(() => _detailEntry = null),
+                          child: const Icon(
+                            Icons.close,
+                            size: 16,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
                     const SizedBox(height: 12),
                     Expanded(
                       child: ResultsView(
@@ -129,6 +136,8 @@ class _AppShellState extends State<AppShell> {
                           improvedPrompt: _detailEntry!.improvedPrompt,
                           issues: _detailEntry!.issuesFound,
                         ),
+                        trace: _detailEntry!.trace,
+                        auditReport: _detailEntry!.auditReport,
                         readOnly: true,
                         onCopyInsert: () {},
                         onEdit: () {},
@@ -173,15 +182,16 @@ class _AppShellState extends State<AppShell> {
         children: [
           const Spacer(),
           Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
             decoration: BoxDecoration(
               color: AppTheme.surface,
               borderRadius: BorderRadius.circular(100),
               border: Border.all(color: AppTheme.borderSubtle),
             ),
-            child: Text('$totalAnalyses analyses total',
-                style: AppTheme.ui(size: 12, color: AppTheme.textPrimary)),
+            child: Text(
+              '$totalAnalyses analyses total',
+              style: AppTheme.ui(size: 12, color: AppTheme.textPrimary),
+            ),
           ),
           const Spacer(),
           Tooltip(
@@ -200,8 +210,11 @@ class _AppShellState extends State<AppShell> {
                       color: AppTheme.surface,
                       border: Border.all(color: AppTheme.borderSubtle),
                     ),
-                    child: const Icon(Icons.notifications_none,
-                        size: 17, color: AppTheme.textSecondary),
+                    child: const Icon(
+                      Icons.notifications_none,
+                      size: 17,
+                      color: AppTheme.textSecondary,
+                    ),
                   ),
                   if ((state.notifications?.all ?? const []).isNotEmpty)
                     Positioned(
@@ -216,9 +229,10 @@ class _AppShellState extends State<AppShell> {
                         child: Text(
                           '${state.notifications!.all.length}',
                           style: AppTheme.ui(
-                              size: 8,
-                              weight: FontWeight.w700,
-                              color: AppTheme.onAccent),
+                            size: 8,
+                            weight: FontWeight.w700,
+                            color: AppTheme.onAccent,
+                          ),
                         ),
                       ),
                     ),
@@ -234,11 +248,14 @@ class _AppShellState extends State<AppShell> {
               child: CircleAvatar(
                 radius: 17,
                 backgroundColor: Color(s?.avatarColor ?? 0xFFFF6B35),
-                child: Text(s?.initials ?? 'EA',
-                    style: AppTheme.ui(
-                        size: 12,
-                        weight: FontWeight.w700,
-                        color: AppTheme.onAccent)),
+                child: Text(
+                  s?.initials ?? 'EA',
+                  style: AppTheme.ui(
+                    size: 12,
+                    weight: FontWeight.w700,
+                    color: AppTheme.onAccent,
+                  ),
+                ),
               ),
             ),
           ),
@@ -256,7 +273,7 @@ class _AppShellState extends State<AppShell> {
         );
       case ShellSection.history:
         return HistoryScreen(
-          entries: state.history.allEntries(),
+          entries: state.allHistory(),
           favorites: state.favorites!,
           onOpenEntry: (e) => setState(() => _detailEntry = e),
         );
@@ -302,8 +319,11 @@ class _Sidebar extends StatelessWidget {
                   gradient: AppTheme.brandGradient,
                   borderRadius: BorderRadius.circular(100),
                 ),
-                child: const Icon(Icons.add,
-                    size: 18, color: AppTheme.onAccent),
+                child: const Icon(
+                  Icons.add,
+                  size: 18,
+                  color: AppTheme.onAccent,
+                ),
               ),
             ),
           ),
@@ -312,8 +332,11 @@ class _Sidebar extends StatelessWidget {
             message: 'Settings',
             child: PressableScale(
               onTap: () => state.openSettings(),
-              child: const Icon(Icons.settings_outlined,
-                  size: 19, color: AppTheme.textDim),
+              child: const Icon(
+                Icons.settings_outlined,
+                size: 19,
+                color: AppTheme.textDim,
+              ),
             ),
           ),
         ],
@@ -340,9 +363,11 @@ class _Sidebar extends StatelessWidget {
                 ? Border.all(color: AppTheme.accent.withValues(alpha: 0.4))
                 : null,
           ),
-          child: Icon(icon,
-              size: 19,
-              color: active ? AppTheme.accent : AppTheme.textDim),
+          child: Icon(
+            icon,
+            size: 19,
+            color: active ? AppTheme.accent : AppTheme.textDim,
+          ),
         ),
       ),
     );

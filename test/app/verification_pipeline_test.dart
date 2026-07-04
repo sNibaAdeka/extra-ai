@@ -42,12 +42,12 @@ class _ScriptedCritic implements CriticModel {
 }
 
 UserProfile _profile() => UserProfile(
-      experienceLevel: ExperienceLevel.developer,
-      primaryTools: const ['Cursor'],
-      projectFocus: ProjectFocus.saas,
-      tonePreference: ToneLevel.technical,
-      createdAt: DateTime(2026, 1, 1),
-    );
+  experienceLevel: ExperienceLevel.developer,
+  primaryTools: const ['Cursor'],
+  projectFocus: ProjectFocus.saas,
+  tonePreference: ToneLevel.technical,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 const _goodDraft =
     '{"improved_prompt": "Fix .cta in @style.css.", "issues": ["a"], "clarifying_question": null}';
@@ -89,8 +89,9 @@ void main() {
       projectService: ProjectContextService(projectBox),
       historyService: HistoryService(store: InMemoryHistoryStore()),
       geminiService: GeminiService(model: gemini),
-      verificationService:
-          critic == null ? null : VerificationService(critic: critic),
+      verificationService: critic == null
+          ? null
+          : VerificationService(critic: critic),
       demoFallbackEnabled: demoFallback,
     );
   }
@@ -107,45 +108,51 @@ void main() {
     expect(state.response!.improvedPrompt, contains('.cta'));
   });
 
-  test('critic flags → one corrective pass → status corrected with fixed draft',
-      () async {
-    final gemini = _ScriptedGemini(const [_goodDraft, _correctedDraft]);
-    final state = build(
-      gemini: gemini,
-      critic: _ScriptedCritic(reply: _failVerdict),
-    );
-    state.setFiles({'style.css': '.cta-button {}'});
-    await state.analyze('make the button pop');
-    expect(gemini.calls, 2); // generation + exactly one corrective pass
-    expect(state.verification, VerificationStatus.corrected);
-    expect(state.response!.improvedPrompt, contains('.cta-button'));
-  });
+  test(
+    'critic flags → one corrective pass → status corrected with fixed draft',
+    () async {
+      final gemini = _ScriptedGemini(const [_goodDraft, _correctedDraft]);
+      final state = build(
+        gemini: gemini,
+        critic: _ScriptedCritic(reply: _failVerdict),
+      );
+      state.setFiles({'style.css': '.cta-button {}'});
+      await state.analyze('make the button pop');
+      expect(gemini.calls, 2); // generation + exactly one corrective pass
+      expect(state.verification, VerificationStatus.corrected);
+      expect(state.response!.improvedPrompt, contains('.cta-button'));
+    },
+  );
 
-  test('critic down → degrade gracefully: draft shown, status unavailable',
-      () async {
-    final state = build(
-      gemini: _ScriptedGemini(const [_goodDraft]),
-      critic: _ScriptedCritic(error: Exception('azure down')),
-    );
-    state.setFiles({'style.css': '.cta {}'});
-    await state.analyze('make the button pop');
-    expect(state.view, OverlayView.results); // never blocked
-    expect(state.verification, VerificationStatus.unavailable);
-    expect(state.response, isNotNull);
-  });
+  test(
+    'critic down → degrade gracefully: draft shown, status unavailable',
+    () async {
+      final state = build(
+        gemini: _ScriptedGemini(const [_goodDraft]),
+        critic: _ScriptedCritic(error: Exception('azure down')),
+      );
+      state.setFiles({'style.css': '.cta {}'});
+      await state.analyze('make the button pop');
+      expect(state.view, OverlayView.results); // never blocked
+      expect(state.verification, VerificationStatus.unavailable);
+      expect(state.response, isNotNull);
+    },
+  );
 
-  test('failed correction keeps the original draft (best-effort, honest note)',
-      () async {
-    final gemini = _ScriptedGemini(const [_goodDraft, 'garbage', 'garbage']);
-    final state = build(
-      gemini: gemini,
-      critic: _ScriptedCritic(reply: _failVerdict),
-    );
-    state.setFiles({'style.css': '.cta {}'});
-    await state.analyze('make the button pop');
-    expect(state.verification, VerificationStatus.unavailable);
-    expect(state.response!.improvedPrompt, contains('.cta')); // original kept
-  });
+  test(
+    'failed correction keeps the original draft (best-effort, honest note)',
+    () async {
+      final gemini = _ScriptedGemini(const [_goodDraft, 'garbage', 'garbage']);
+      final state = build(
+        gemini: gemini,
+        critic: _ScriptedCritic(reply: _failVerdict),
+      );
+      state.setFiles({'style.css': '.cta {}'});
+      await state.analyze('make the button pop');
+      expect(state.verification, VerificationStatus.unavailable);
+      expect(state.response!.improvedPrompt, contains('.cta')); // original kept
+    },
+  );
 
   test('no critic configured → status skipped, no note', () async {
     final state = build(gemini: _ScriptedGemini(const [_goodDraft]));
@@ -154,18 +161,21 @@ void main() {
     expect(state.verification, VerificationStatus.skipped);
   });
 
-  test('DEMO-ONLY fallback shows canned response when generation fails entirely',
-      () async {
-    final state = build(
-      gemini: _ScriptedGemini(const [null, null]),
-      demoFallback: true,
-    );
-    state.setFiles({'style.css': '.cta {}'});
-    await state.analyze('make the button pop');
-    expect(state.view, OverlayView.results);
-    expect(state.verification, VerificationStatus.demoFallback);
-    expect(state.response!.issues, isNotEmpty);
-  });
+  test(
+    'DEMO-ONLY fallback uses the current request when generation fails entirely',
+    () async {
+      final state = build(
+        gemini: _ScriptedGemini(const [null, null]),
+        demoFallback: true,
+      );
+      state.setFiles({'style.css': '.cta {}'});
+      await state.analyze('make the button pop');
+      expect(state.view, OverlayView.results);
+      expect(state.verification, VerificationStatus.demoFallback);
+      expect(state.response!.improvedPrompt, contains('make the button pop'));
+      expect(state.response!.issues, isNotEmpty);
+    },
+  );
 
   test('health check maps probe results to statuses', () async {
     final checker = HealthCheckService(

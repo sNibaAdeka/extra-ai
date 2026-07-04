@@ -41,12 +41,16 @@ class _QuickTemplatesScreenState extends State<QuickTemplatesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [
-            const Icon(Icons.bolt, size: 20, color: AppTheme.accent),
-            const SizedBox(width: 8),
-            Text('Quick Templates',
-                style: AppTheme.display(size: 24, weight: FontWeight.w600)),
-          ]),
+          Row(
+            children: [
+              const Icon(Icons.bolt, size: 20, color: AppTheme.accent),
+              const SizedBox(width: 8),
+              Text(
+                'Quick Templates',
+                style: AppTheme.display(size: 24, weight: FontWeight.w600),
+              ),
+            ],
+          ),
           const SizedBox(height: 6),
           Text(
             'Bind a hotkey to a fixed analysis type. Press anywhere, get the '
@@ -86,12 +90,16 @@ class _QuickTemplatesScreenState extends State<QuickTemplatesScreen> {
             for (final entry in bindings.entries)
               _BindingRow(
                 combo: entry.value,
-                template: kQuickTemplates
-                    .firstWhere((t) => t.id == entry.key,
-                        orElse: () => kQuickTemplates.first),
-                onEdit: () => setState(() => _capturing = kQuickTemplates
-                    .firstWhere((t) => t.id == entry.key,
-                        orElse: () => kQuickTemplates.first)),
+                template: kQuickTemplates.firstWhere(
+                  (t) => t.id == entry.key,
+                  orElse: () => kQuickTemplates.first,
+                ),
+                onEdit: () => setState(
+                  () => _capturing = kQuickTemplates.firstWhere(
+                    (t) => t.id == entry.key,
+                    orElse: () => kQuickTemplates.first,
+                  ),
+                ),
                 onRemove: () async {
                   await widget.bindings.remove(entry.key);
                   setState(() {});
@@ -111,20 +119,24 @@ class _QuickTemplatesScreenState extends State<QuickTemplatesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('No quick templates yet',
-              style: AppTheme.display(size: 20, weight: FontWeight.w600)),
+          Text(
+            'No quick templates yet',
+            style: AppTheme.display(size: 20, weight: FontWeight.w600),
+          ),
           const SizedBox(height: 8),
           Wrap(
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text('Pick a template above, or bind ',
-                  style: AppTheme.ui(
-                      size: 13, color: AppTheme.textSecondary)),
+              Text(
+                'Pick a template above, or bind ',
+                style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
+              ),
               const KeycapBadge(keys: ['⌘', '⇧', '1'], size: KeycapSize.small),
-              Text(" → 'Security check'. Then press it anywhere to run that "
-                  'check instantly.',
-                  style: AppTheme.ui(
-                      size: 13, color: AppTheme.textSecondary)),
+              Text(
+                " → 'Security check'. Then press it anywhere to run that "
+                'check instantly.',
+                style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
+              ),
             ],
           ),
         ],
@@ -162,14 +174,18 @@ class _BindingRow extends StatelessWidget {
           const Spacer(),
           PressableScale(
             onTap: onEdit,
-            child: Text('Edit',
-                style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
+            child: Text(
+              'Edit',
+              style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+            ),
           ),
           const SizedBox(width: 14),
           PressableScale(
             onTap: onRemove,
-            child: Text('Remove',
-                style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
+            child: Text(
+              'Remove',
+              style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+            ),
           ),
         ],
       ),

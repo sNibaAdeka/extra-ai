@@ -1,57 +1,72 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:extra_ai/models/project_context.dart';
+import 'package:extra_ai/models/project_intelligence.dart';
 import 'package:extra_ai/models/prompt_history_entry.dart';
 import 'package:extra_ai/models/user_profile.dart';
 import 'package:extra_ai/services/extra_ai_request_builder.dart';
 import 'package:extra_ai/services/knowledge_base_service.dart';
 
 UserProfile _profile() => UserProfile(
-      experienceLevel: ExperienceLevel.vibeCoder,
-      primaryTools: const ['Cursor', 'Claude Code'],
-      projectFocus: ProjectFocus.clientSites,
-      tonePreference: ToneLevel.explained,
-      createdAt: DateTime(2026, 1, 1),
-    );
+  experienceLevel: ExperienceLevel.vibeCoder,
+  primaryTools: const ['Cursor', 'Claude Code'],
+  projectFocus: ProjectFocus.clientSites,
+  tonePreference: ToneLevel.explained,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 ProjectContext _project({int analyses = 0}) => ProjectContext(
-      projectPath: '/Users/me/site',
-      detectedStack: 'React + Tailwind',
-      fileNames: const ['App.jsx', 'style.css'],
-      firstSeenAt: DateTime(2026, 1, 1),
-      lastAnalyzedAt: DateTime(2026, 1, 1),
-      totalAnalysesCount: analyses,
-    );
+  projectPath: '/Users/me/site',
+  detectedStack: 'React + Tailwind',
+  fileNames: const ['App.jsx', 'style.css'],
+  firstSeenAt: DateTime(2026, 1, 1),
+  lastAnalyzedAt: DateTime(2026, 1, 1),
+  totalAnalysesCount: analyses,
+);
+
+const _intelligence = ProjectIntelligence(
+  summary: 'site uses React + Tailwind; key roots: src, components.',
+  packageManager: 'npm',
+  toolchain: ['React', 'Tailwind'],
+  sourceRoots: ['src', 'components'],
+  entrypoints: ['src/main.tsx'],
+  importantFiles: ['src/main.tsx', 'src/components/Hero.tsx'],
+  recommendedChecks: ['npm run lint', 'npm run build'],
+  riskFlags: ['context snapshot is near the file limit'],
+);
 
 void main() {
   setUp(() async {
     KnowledgeBaseService.reset();
-    await KnowledgeBaseService.loadAll(loader: (path) async {
-      if (path.contains('stack_patterns')) {
-        return '{"react": {"common_issues": [{"pattern": "missing key prop"}]}}';
-      }
-      if (path.contains('tool_syntax')) {
-        return '{"cursor": {"convention": "use @file refs", "format_hint": "scope it"}}';
-      }
-      if (path.contains('security_patterns')) {
-        return '{"patterns": [{"id": "hardcoded_api_key"}]}';
-      }
-      if (path.contains('design_heuristics')) {
-        return '{"contrast": {"rule": "4.5:1"}}';
-      }
-      return '{}';
-    });
+    await KnowledgeBaseService.loadAll(
+      loader: (path) async {
+        if (path.contains('stack_patterns')) {
+          return '{"react": {"common_issues": [{"pattern": "missing key prop"}]}}';
+        }
+        if (path.contains('tool_syntax')) {
+          return '{"cursor": {"convention": "use @file refs", "format_hint": "scope it"}}';
+        }
+        if (path.contains('security_patterns')) {
+          return '{"patterns": [{"id": "hardcoded_api_key"}]}';
+        }
+        if (path.contains('design_heuristics')) {
+          return '{"contrast": {"rule": "4.5:1"}}';
+        }
+        return '{}';
+      },
+    );
   });
 
   ExtraAIRequestBuilder builder({
     List<PromptHistoryEntry> history = const [],
     bool frustrated = false,
-  }) =>
-      ExtraAIRequestBuilder(
-        userProfile: _profile(),
-        projectContext: _project(),
-        recentHistory: history,
-        frustrationDetected: frustrated,
-      );
+    ProjectIntelligence? intelligence,
+  }) => ExtraAIRequestBuilder(
+    userProfile: _profile(),
+    projectContext: _project(),
+    recentHistory: history,
+    projectIntelligence: intelligence,
+    frustrationDetected: frustrated,
+  );
 
   group('buildContextBlock', () {
     test('includes the user profile fields', () {
@@ -65,6 +80,14 @@ void main() {
       final block = builder().buildContextBlock();
       expect(block, contains('React + Tailwind'));
       expect(block, contains('App.jsx'));
+    });
+
+    test('includes project intelligence when available', () {
+      final block = builder(intelligence: _intelligence).buildContextBlock();
+      expect(block, contains('PROJECT INTELLIGENCE'));
+      expect(block, contains('site uses React + Tailwind'));
+      expect(block, contains('src/main.tsx'));
+      expect(block, contains('npm run build'));
     });
 
     test('shows the analysis number as count + 1', () {
@@ -100,16 +123,18 @@ void main() {
     });
 
     test('summarizes recent history entries when present', () {
-      final block = builder(history: [
-        PromptHistoryEntry(
-          projectPathHash: 'h',
-          roughPrompt: 'make the button blue',
-          improvedPrompt:
-              'Change the .cta button background to #2563EB in style.css, preserving hover state and all other styles.',
-          issuesFound: const [],
-          timestamp: DateTime(2026, 1, 2),
-        ),
-      ]).buildContextBlock();
+      final block = builder(
+        history: [
+          PromptHistoryEntry(
+            projectPathHash: 'h',
+            roughPrompt: 'make the button blue',
+            improvedPrompt:
+                'Change the .cta button background to #2563EB in style.css, preserving hover state and all other styles.',
+            issuesFound: const [],
+            timestamp: DateTime(2026, 1, 2),
+          ),
+        ],
+      ).buildContextBlock();
       expect(block, contains('make the button blue'));
       expect(block, contains('RECENT HISTORY'));
     });
@@ -125,18 +150,23 @@ void main() {
       );
     });
 
-    test('handles a very short improved prompt in history without crashing', () {
-      final block = builder(history: [
-        PromptHistoryEntry(
-          projectPathHash: 'h',
-          roughPrompt: 'x',
-          improvedPrompt: 'short', // < 80 chars — substring must not throw
-          issuesFound: const [],
-          timestamp: DateTime(2026, 1, 2),
-        ),
-      ]).buildContextBlock();
-      expect(block, contains('short'));
-    });
+    test(
+      'handles a very short improved prompt in history without crashing',
+      () {
+        final block = builder(
+          history: [
+            PromptHistoryEntry(
+              projectPathHash: 'h',
+              roughPrompt: 'x',
+              improvedPrompt: 'short', // < 80 chars — substring must not throw
+              issuesFound: const [],
+              timestamp: DateTime(2026, 1, 2),
+            ),
+          ],
+        ).buildContextBlock();
+        expect(block, contains('short'));
+      },
+    );
   });
 
   group('buildFullPrompt', () {
@@ -150,7 +180,8 @@ void main() {
       expect(full, contains('PROJECT FILES'));
       expect(full, contains('export default App;'));
       expect(full, contains('make it nicer'));
-      expect(full, contains('issues_enabled: true'));
+      expect(full, contains('bug_audit: true'));
+      expect(full, contains('security_audit: true'));
     });
   });
 }

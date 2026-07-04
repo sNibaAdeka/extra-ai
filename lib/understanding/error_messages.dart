@@ -20,7 +20,7 @@ class ErrorMessages {
       case FailureType.networkTimeout:
         return 'This is taking longer than usual — check your connection and try again.';
       case FailureType.rateLimited:
-        return "Slow down a bit — you've hit the request limit. Try again in a minute.";
+        return "Gemini is out of quota or credits right now — switch on mock mode or update billing, then try again.";
       case FailureType.invalidResponse:
         return 'Something went sideways reading the result — try again.';
       case FailureType.fileTooLarge:

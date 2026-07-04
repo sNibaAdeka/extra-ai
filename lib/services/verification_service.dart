@@ -38,10 +38,9 @@ class VerificationResult {
       failedChecks: ((json['failed_checks'] as List?) ?? const [])
           .map((e) => e.toString())
           .toList(),
-      correctionInstruction:
-          (instruction != null && instruction.trim().isEmpty)
-              ? null
-              : instruction,
+      correctionInstruction: (instruction != null && instruction.trim().isEmpty)
+          ? null
+          : instruction,
     );
   }
 }
@@ -58,7 +57,8 @@ class VerificationResult {
 /// degrades gracefully (shows the draft with an honest note) rather than
 /// blocking the user on the quality gate.
 class VerificationService {
-  VerificationService({required CriticModel critic}) : _critic = critic; // ignore: prefer_initializing_formals
+  VerificationService({required CriticModel critic})
+    : _critic = critic; // ignore: prefer_initializing_formals
 
   final CriticModel _critic;
 
@@ -69,7 +69,8 @@ class VerificationService {
     required String originalFileContents,
     required UserProfile userProfile,
   }) async {
-    final checkPrompt = '''
+    final checkPrompt =
+        '''
 You are a strict quality checker for an AI coding assistant's output.
 You do not generate new content — you only verify.
 

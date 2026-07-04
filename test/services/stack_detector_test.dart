@@ -39,9 +39,7 @@ void main() {
     });
 
     test('detects Vue from package.json vue dependency', () {
-      final files = {
-        'package.json': '{"dependencies": {"vue": "^3.0.0"}}',
-      };
+      final files = {'package.json': '{"dependencies": {"vue": "^3.0.0"}}'};
       expect(StackDetector.detect(files), contains('Vue'));
     });
 

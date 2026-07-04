@@ -12,7 +12,10 @@ void main() {
     });
 
     test('flags a short 3-4 word prompt as vague', () {
-      expect(IntentPreChecker.check('change the header size'), IntentClarity.vague);
+      expect(
+        IntentPreChecker.check('change the header size'),
+        IntentClarity.vague,
+      );
     });
 
     test('treats a detailed prompt as clear', () {

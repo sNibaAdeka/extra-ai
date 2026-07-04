@@ -22,30 +22,35 @@ class QuickTemplate {
 /// The five fixed MVP templates (Screen 6).
 const List<QuickTemplate> kQuickTemplates = [
   QuickTemplate(
-      id: 'responsive',
-      icon: '🌐',
-      label: 'Fix responsive',
-      cannedPrompt: 'Fix the responsive layout issues on this screen'),
+    id: 'responsive',
+    icon: '🌐',
+    label: 'Fix responsive',
+    cannedPrompt: 'Fix the responsive layout issues on this screen',
+  ),
   QuickTemplate(
-      id: 'copy',
-      icon: '📝',
-      label: 'Improve copy',
-      cannedPrompt: 'Improve the UI copy on this screen'),
+    id: 'copy',
+    icon: '📝',
+    label: 'Improve copy',
+    cannedPrompt: 'Improve the UI copy on this screen',
+  ),
   QuickTemplate(
-      id: 'security',
-      icon: '🔒',
-      label: 'Security check',
-      cannedPrompt: 'Run a security check on this code'),
+    id: 'security',
+    icon: '🔒',
+    label: 'Security check',
+    cannedPrompt: 'Run a security check on this code',
+  ),
   QuickTemplate(
-      id: 'accessibility',
-      icon: '♿',
-      label: 'Accessibility fix',
-      cannedPrompt: 'Find and fix accessibility problems on this screen'),
+    id: 'accessibility',
+    icon: '♿',
+    label: 'Accessibility fix',
+    cannedPrompt: 'Find and fix accessibility problems on this screen',
+  ),
   QuickTemplate(
-      id: 'visual',
-      icon: '🎨',
-      label: 'Polish visual',
-      cannedPrompt: 'Polish the visual design of this screen'),
+    id: 'visual',
+    icon: '🎨',
+    label: 'Polish visual',
+    cannedPrompt: 'Polish the visual design of this screen',
+  ),
 ];
 
 /// Persisted hotkey bindings: templateId → display combo (e.g. "⌘⇧1").
@@ -56,8 +61,8 @@ class TemplateBindingsService {
   final Box _box;
 
   Map<String, String> get all => {
-        for (final k in _box.keys) k as String: _box.get(k) as String,
-      };
+    for (final k in _box.keys) k as String: _box.get(k) as String,
+  };
 
   String? comboFor(String templateId) => _box.get(templateId) as String?;
 

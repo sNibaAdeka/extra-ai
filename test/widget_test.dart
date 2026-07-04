@@ -22,12 +22,12 @@ class _NoopModel implements PromptModel {
 }
 
 UserProfile _profile() => UserProfile(
-      experienceLevel: ExperienceLevel.developer,
-      primaryTools: const ['Cursor'],
-      projectFocus: ProjectFocus.saas,
-      tonePreference: ToneLevel.technical,
-      createdAt: DateTime(2026, 1, 1),
-    );
+  experienceLevel: ExperienceLevel.developer,
+  primaryTools: const ['Cursor'],
+  projectFocus: ProjectFocus.saas,
+  tonePreference: ToneLevel.technical,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 void main() {
   group('WindowArgs', () {
@@ -82,7 +82,11 @@ void main() {
         settings: settings,
       );
       final auth = AuthService(store: InMemoryAccountStore());
-      return MainFlowController(auth: auth, appState: state, settings: settings);
+      return MainFlowController(
+        auth: auth,
+        appState: state,
+        settings: settings,
+      );
     }
 
     test('signed-out user starts at the auth gate', () {

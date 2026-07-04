@@ -39,7 +39,10 @@ class InMemoryAccountStore implements AccountStore {
   Map<String, Map<String, dynamic>> readAccounts() => _accounts;
 
   @override
-  Future<void> writeAccount(String emailKey, Map<String, dynamic> record) async {
+  Future<void> writeAccount(
+    String emailKey,
+    Map<String, dynamic> record,
+  ) async {
     _accounts[emailKey] = record;
   }
 
@@ -53,7 +56,9 @@ class InMemoryAccountStore implements AccountStore {
 /// Local stub authentication. Handles registration, sign-in, sign-out, and a
 /// persisted session. The signed-in [Account.id] scopes all per-user data.
 class AuthService {
-  AuthService({required AccountStore store}) : _store = store { // ignore: prefer_initializing_formals
+  AuthService({required AccountStore store})
+    // ignore: prefer_initializing_formals
+    : _store = store {
     _restoreSession();
   }
 

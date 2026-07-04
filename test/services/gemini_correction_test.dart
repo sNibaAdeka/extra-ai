@@ -20,26 +20,32 @@ void main() {
     issues: ['issue A'],
   );
 
-  test('correctDraft sends the draft + correction instruction and parses the fix',
-      () async {
-    final model = _RecordingModel(
-      '{"improved_prompt": "Change .cta in style.css to blue.", "issues": ["issue A"], "clarifying_question": null}',
-    );
-    final service = GeminiService(model: model);
+  test(
+    'correctDraft sends the draft + correction instruction and parses the fix',
+    () async {
+      final model = _RecordingModel(
+        '{"improved_prompt": "Change .cta in style.css to blue.", "issues": ["issue A"], "clarifying_question": null}',
+      );
+      final service = GeminiService(model: model);
 
-    final result = await service.correctDraft(
-      fullPrompt: 'ORIGINAL_REQUEST_MARKER',
-      draft: draft,
-      correctionInstruction: 'Reference only class names present in style.css.',
-    );
+      final result = await service.correctDraft(
+        fullPrompt: 'ORIGINAL_REQUEST_MARKER',
+        draft: draft,
+        correctionInstruction:
+            'Reference only class names present in style.css.',
+      );
 
-    expect(result.isSuccess, isTrue);
-    expect(result.response!.improvedPrompt, contains('.cta'));
-    final sent = model.prompts.single;
-    expect(sent, contains('ORIGINAL_REQUEST_MARKER'));
-    expect(sent, contains('.fake-class')); // the previous draft is included
-    expect(sent, contains('Reference only class names present in style.css.'));
-  });
+      expect(result.isSuccess, isTrue);
+      expect(result.response!.improvedPrompt, contains('.cta'));
+      final sent = model.prompts.single;
+      expect(sent, contains('ORIGINAL_REQUEST_MARKER'));
+      expect(sent, contains('.fake-class')); // the previous draft is included
+      expect(
+        sent,
+        contains('Reference only class names present in style.css.'),
+      );
+    },
+  );
 
   test('correctDraft maps a bad corrective reply to a failure', () async {
     final service = GeminiService(model: _RecordingModel('garbage'));

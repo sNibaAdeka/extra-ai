@@ -66,24 +66,66 @@ class AppTheme {
 
   /// Dark glass panel used by the overlay windows.
   static BoxDecoration glassPanel({double radius = 20}) => BoxDecoration(
-        color: bgVoid.withValues(alpha: 0.94),
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderSubtle),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x99000000),
-            blurRadius: 80,
-            offset: Offset(0, 32),
-          ),
-        ],
-      );
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        bgVoid.withValues(alpha: 0.97),
+        bgMid.withValues(alpha: 0.88),
+        bgVoid.withValues(alpha: 0.95),
+      ],
+    ),
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: accent.withValues(alpha: 0.16)),
+    boxShadow: [
+      BoxShadow(
+        color: accent.withValues(alpha: 0.16),
+        blurRadius: 72,
+        spreadRadius: -24,
+        offset: const Offset(0, 28),
+      ),
+      const BoxShadow(
+        color: Color(0xAA000000),
+        blurRadius: 80,
+        offset: Offset(0, 32),
+      ),
+    ],
+  );
+
+  static BoxDecoration islandPanel({double radius = 28}) => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        bgVoid.withValues(alpha: 0.98),
+        surface.withValues(alpha: 0.96),
+        bgMid.withValues(alpha: 0.82),
+      ],
+      stops: const [0, 0.62, 1],
+    ),
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: accent.withValues(alpha: 0.24)),
+    boxShadow: [
+      BoxShadow(
+        color: accent.withValues(alpha: 0.24),
+        blurRadius: 68,
+        spreadRadius: -22,
+        offset: const Offset(0, 24),
+      ),
+      BoxShadow(
+        color: Color(0x99000000),
+        blurRadius: 42,
+        offset: Offset(0, 22),
+      ),
+    ],
+  );
 
   /// Card-on-surface decoration used across dashboard/settings cards.
   static BoxDecoration card({double radius = 14}) => BoxDecoration(
-        color: surface,
-        borderRadius: BorderRadius.circular(radius),
-        border: Border.all(color: borderSubtle),
-      );
+    color: surface,
+    borderRadius: BorderRadius.circular(radius),
+    border: Border.all(color: borderSubtle),
+  );
 
   // ---------------------------------------------------------------------------
   // Typography
@@ -97,46 +139,43 @@ class AppTheme {
     FontWeight weight = FontWeight.w600,
     Color color = textPrimary,
     double? letterSpacing,
-  }) =>
-      GoogleFonts.spaceGrotesk(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        letterSpacing: letterSpacing,
-      );
+  }) => GoogleFonts.spaceGrotesk(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    letterSpacing: letterSpacing,
+  );
 
   static TextStyle ui({
     double size = 14,
     FontWeight weight = FontWeight.w400,
     Color color = textPrimary,
     double height = 1.4,
-  }) =>
-      GoogleFonts.inter(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-      );
+  }) => GoogleFonts.inter(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+  );
 
   static TextStyle mono({
     double size = 13,
     FontWeight weight = FontWeight.w400,
     Color color = textPrimary,
     double height = 1.5,
-  }) =>
-      GoogleFonts.jetBrainsMono(
-        fontSize: size,
-        fontWeight: weight,
-        color: color,
-        height: height,
-      );
+  }) => GoogleFonts.jetBrainsMono(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+    height: height,
+  );
 
   /// Small-caps section label (TEMPLATES, BINDINGS, EXPERIMENTAL...).
   static TextStyle sectionLabel() => ui(
-        size: 11,
-        weight: FontWeight.w600,
-        color: textDim,
-      ).copyWith(letterSpacing: 1.2);
+    size: 11,
+    weight: FontWeight.w600,
+    color: textDim,
+  ).copyWith(letterSpacing: 1.2);
 
   // ---------------------------------------------------------------------------
   // ThemeData — dark, Material 3, brand-seeded.

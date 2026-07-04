@@ -19,6 +19,16 @@ class MainFlutterWindow: NSWindow {
     // in its own engine, so Hive/path_provider/etc. work there too.
     FlutterMultiWindowPlugin.setOnWindowCreatedCallback { controller in
       RegisterGeneratedPlugins(registry: controller)
+      controller.backgroundColor = NSColor.clear
+      if let window = controller.view.window {
+        window.isOpaque = false
+        window.backgroundColor = NSColor.clear
+        window.hasShadow = false
+        window.contentView?.wantsLayer = true
+        window.contentView?.layer?.backgroundColor = NSColor.clear.cgColor
+      }
+      controller.view.wantsLayer = true
+      controller.view.layer?.backgroundColor = NSColor.clear.cgColor
     }
 
     super.awakeFromNib()

@@ -39,7 +39,8 @@ class _ScreenBorderState extends State<ScreenBorder>
 
   @override
   Widget build(BuildContext context) {
-    final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,

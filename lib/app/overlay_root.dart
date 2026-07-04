@@ -2,20 +2,18 @@ import 'dart:convert';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../features/loading_view.dart';
-import '../features/overlay/project_picker.dart';
 import '../features/prompt_input.dart';
 import '../features/results_view.dart';
+import '../models/project_context.dart';
 import '../overlay/overlay_window.dart';
-import '../overlay/screen_border.dart';
 import '../theme/app_theme.dart';
-import '../widgets/pill_widget.dart';
 import 'app_state.dart';
 
-/// The full-screen transparent overlay: breathing border on the edges, the pill
-/// top-center, and the floating window on the right whose body follows
-/// [AppState.view]. Escape closes; the caller wires the hotkey + window hide.
+/// Transparent hotkey overlay. The macOS window itself is clear; this root only
+/// paints the compact floating surfaces that follow [AppState.view].
 class OverlayRoot extends StatelessWidget {
   const OverlayRoot({
     super.key,
@@ -37,24 +35,7 @@ class OverlayRoot extends StatelessWidget {
       builder: (context, _) {
         return Stack(
           children: [
-            // Edge-to-edge breathing border.
-            const Positioned.fill(child: ScreenBorder()),
-
-            // Pill, top-center.
-            Positioned(
-              top: 32,
-              left: 0,
-              right: 0,
-              child: Center(child: PillWidget(onTap: onDismiss)),
-            ),
-
-            // Floating window, right side, vertically centered.
-            Positioned(
-              right: 40,
-              top: 0,
-              bottom: 0,
-              child: Center(child: _window(context)),
-            ),
+            Positioned.fill(child: Center(child: _window(context))),
 
             // Transient error banner.
             if (state.errorMessage != null)
@@ -71,7 +52,9 @@ class OverlayRoot extends StatelessWidget {
                 top: 88,
                 left: 0,
                 right: 0,
-                child: Center(child: _RedactionNotice(count: state.redactedCount)),
+                child: Center(
+                  child: _RedactionNotice(count: state.redactedCount),
+                ),
               ),
           ],
         );
@@ -95,36 +78,35 @@ class OverlayRoot extends StatelessWidget {
   Widget _window(BuildContext context) {
     switch (state.view) {
       case OverlayView.input:
-        return OverlayWindow(
-          onClose: onDismiss,
-          statusDotColor: _statusDotColor,
-          statusTooltip: _statusTooltip,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              ProjectPicker(
-                projects: state.linkedProjects,
-                selected: state.selectedProject,
-                onSelect: state.selectProject,
-                onAddProject: () => _addProject(context),
-              ),
-              Expanded(
-                child: PromptInput(
-                  fileCount: state.fileCount,
-                  initialText: state.takePrefillPrompt(),
-                  onPickFiles: () => _pickFiles(context),
-                  onAnalyze: state.analyze,
-                ),
-              ),
-            ],
+        return PromptInput(
+          fileCount: state.fileCount,
+          initialText: state.prefillPrompt,
+          onInitialTextApplied: state.markPrefillPromptApplied,
+          projectBrief: state.projectIntelligence?.summary,
+          onPickFiles: () => _pickFiles(context),
+          onAnalyze: (prompt, preferences) =>
+              state.analyze(prompt, preferences: preferences),
+          onDismiss: onDismiss,
+          projectControl: _ProjectScopeButton(
+            projects: state.linkedProjects,
+            selected: state.selectedProject,
+            statusDotColor: _statusDotColor,
+            statusTooltip: _statusTooltip,
+            onSelect: state.selectProject,
+            onSyncProjects: state.syncDetectedProjects,
+            onAddProject: () => _addProject(context),
           ),
         );
       case OverlayView.loading:
         return OverlayWindow(
           onClose: onDismiss,
+          width: 600,
+          height: 400,
           child: LoadingView(
-            title: 'Analyzing your code...',
+            title: 'Reading screen context...',
             subtitle: state.loadingSubtitle,
+            steps: state.loadingSteps,
+            activeStep: state.loadingStepIndex,
           ),
         );
       case OverlayView.results:
@@ -132,26 +114,48 @@ class OverlayRoot extends StatelessWidget {
           onClose: onDismiss,
           statusDotColor: _statusDotColor,
           statusTooltip: _statusTooltip,
+          width: 720,
+          height: 660,
           child: ResultsView(
             response: state.response!,
+            trace: state.analysisTrace,
+            auditReport: state.auditReport,
+            qualityReport: state.qualityReport,
             verificationStatus: state.verification,
-            onCopyInsert: onDismiss,
-            onEdit: state.showInput,
+            primaryActionLabel: 'Copy Prompt',
+            primaryActionShortcut: '⌘C',
+            onCopyInsert: _copyPrompt,
+            onEdit: state.editLastPrompt,
           ),
         );
       // The overlay never hosts onboarding or the app shell — those live in
       // the main window (Window 1). Fall back to input defensively.
       case OverlayView.onboarding:
       case OverlayView.home:
-        return OverlayWindow(
-          onClose: onDismiss,
-          child: PromptInput(
-            fileCount: state.fileCount,
-            onPickFiles: () => _pickFiles(context),
-            onAnalyze: state.analyze,
+        return PromptInput(
+          fileCount: state.fileCount,
+          initialText: state.prefillPrompt,
+          onInitialTextApplied: state.markPrefillPromptApplied,
+          projectBrief: state.projectIntelligence?.summary,
+          projectControl: _ProjectScopeButton(
+            projects: state.linkedProjects,
+            selected: state.selectedProject,
+            onSelect: state.selectProject,
+            onSyncProjects: state.syncDetectedProjects,
+            onAddProject: () => _addProject(context),
           ),
+          onPickFiles: () => _pickFiles(context),
+          onAnalyze: (prompt, preferences) =>
+              state.analyze(prompt, preferences: preferences),
+          onDismiss: onDismiss,
         );
     }
+  }
+
+  Future<void> _copyPrompt() async {
+    final text = state.response?.improvedPrompt;
+    if (text == null || text.trim().isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
   }
 
   /// "+ Add new project" from the overlay picker — pick a folder, link it,
@@ -161,12 +165,7 @@ class OverlayRoot extends StatelessWidget {
       dialogTitle: 'Pick a project folder',
     );
     if (path == null) return;
-    final linked = await state.projectService.link(
-      projectPath: path,
-      fileNames: const [],
-      detectedStack: 'Unknown',
-    );
-    await state.selectProject(linked.pathHash);
+    await state.linkProject(path);
   }
 
   Future<void> _pickFiles(BuildContext context) async {
@@ -188,9 +187,259 @@ class OverlayRoot extends StatelessWidget {
         continue; // skip binary
       }
     }
-    final projectPath =
-        result.files.first.path ?? result.files.first.name;
+    final projectPath = result.files.first.path ?? result.files.first.name;
     state.setFiles(raw, projectPath: projectPath);
+  }
+}
+
+class _ProjectScopeButton extends StatelessWidget {
+  const _ProjectScopeButton({
+    required this.projects,
+    required this.selected,
+    required this.onSelect,
+    required this.onSyncProjects,
+    required this.onAddProject,
+    this.statusDotColor,
+    this.statusTooltip,
+  });
+
+  final List<ProjectContext> projects;
+  final ProjectContext? selected;
+  final ValueChanged<String> onSelect;
+  final Future<int> Function() onSyncProjects;
+  final VoidCallback onAddProject;
+  final Color? statusDotColor;
+  final String? statusTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final current = selected ?? (projects.isEmpty ? null : projects.first);
+    final tooltip = current == null
+        ? 'Choose project folder'
+        : 'Project folder: ${current.displayName}';
+
+    return PopupMenuButton<String>(
+      tooltip: tooltip,
+      color: AppTheme.surfaceHigh,
+      elevation: 18,
+      constraints: const BoxConstraints(minWidth: 260, maxWidth: 320),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: const BorderSide(color: AppTheme.borderSubtle),
+      ),
+      position: PopupMenuPosition.under,
+      onSelected: (value) async {
+        if (value == '__add__') {
+          onAddProject();
+        } else if (value == '__sync__') {
+          await onSyncProjects();
+        } else {
+          onSelect(value);
+        }
+      },
+      itemBuilder: (context) => [
+        if (projects.isEmpty)
+          PopupMenuItem(
+            enabled: false,
+            child: _ProjectMenuText(
+              title: 'No projects linked',
+              subtitle: 'Sync Codex / Claude or choose a folder',
+            ),
+          ),
+        for (final p in projects)
+          PopupMenuItem(
+            value: p.pathHash,
+            child: _ProjectMenuRow(
+              project: p,
+              selected: p.pathHash == current?.pathHash,
+            ),
+          ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: '__sync__',
+          child: const _ProjectActionRow(
+            icon: Icons.sync_rounded,
+            title: 'Sync Codex / Claude',
+            subtitle: 'Refresh projects from local tool history',
+          ),
+        ),
+        PopupMenuItem(
+          value: '__add__',
+          child: const _ProjectActionRow(
+            icon: Icons.create_new_folder_outlined,
+            title: 'Choose folder...',
+            subtitle: 'Link a project manually',
+          ),
+        ),
+      ],
+      child: _ProjectIcon(
+        tooltip: tooltip,
+        active: current != null,
+        statusDotColor: statusDotColor,
+        statusTooltip: statusTooltip,
+      ),
+    );
+  }
+}
+
+class _ProjectIcon extends StatelessWidget {
+  const _ProjectIcon({
+    required this.tooltip,
+    required this.active,
+    this.statusDotColor,
+    this.statusTooltip,
+  });
+
+  final String tooltip;
+  final bool active;
+  final Color? statusDotColor;
+  final String? statusTooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = Tooltip(
+      message: tooltip,
+      child: AnimatedContainer(
+        duration: AppTheme.microMs,
+        width: 32,
+        height: 32,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active
+              ? AppTheme.accent.withValues(alpha: 0.12)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: active
+                ? AppTheme.accent.withValues(alpha: 0.6)
+                : Colors.transparent,
+          ),
+        ),
+        child: Icon(
+          Icons.folder_open_outlined,
+          size: 19,
+          color: active ? AppTheme.accent : AppTheme.textDim,
+        ),
+      ),
+    );
+
+    if (statusDotColor == null) return button;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        button,
+        Positioned(
+          right: 1,
+          top: 2,
+          child: Tooltip(
+            message: statusTooltip ?? 'Service status',
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: statusDotColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: statusDotColor!.withValues(alpha: 0.55),
+                    blurRadius: 7,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectMenuRow extends StatelessWidget {
+  const _ProjectMenuRow({required this.project, required this.selected});
+
+  final ProjectContext project;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          selected ? Icons.check_circle_rounded : Icons.folder_outlined,
+          size: 18,
+          color: selected ? AppTheme.accent : AppTheme.textDim,
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ProjectMenuText(
+            title: project.displayName,
+            subtitle: project.detectedStack == 'Unknown'
+                ? project.projectPath
+                : '${project.detectedStack} · ${project.projectPath}',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectActionRow extends StatelessWidget {
+  const _ProjectActionRow({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: AppTheme.accent),
+        const SizedBox(width: 10),
+        Expanded(
+          child: _ProjectMenuText(title: title, subtitle: subtitle),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectMenuText extends StatelessWidget {
+  const _ProjectMenuText({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTheme.ui(
+            size: 13,
+            weight: FontWeight.w700,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          subtitle,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTheme.ui(size: 11, color: AppTheme.textDim),
+        ),
+      ],
+    );
   }
 }
 
@@ -236,12 +485,18 @@ class _ErrorBanner extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppTheme.surfaceHigh,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.signalOrange.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppTheme.signalOrange.withValues(alpha: 0.5),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 16, color: AppTheme.signalOrange),
+            const Icon(
+              Icons.error_outline,
+              size: 16,
+              color: AppTheme.signalOrange,
+            ),
             const SizedBox(width: 10),
             Flexible(
               child: Text(

@@ -100,25 +100,29 @@ void main() {
       expect(wrong.ok, isFalse);
       expect(auth.isSignedIn, isFalse);
 
-      final right =
-          await auth.signIn(email: 'ada@x.com', password: 'password1');
+      final right = await auth.signIn(
+        email: 'ada@x.com',
+        password: 'password1',
+      );
       expect(right.ok, isTrue);
       expect(auth.isSignedIn, isTrue);
     });
 
-    test('session persists across a new AuthService over the same store',
-        () async {
-      await auth.register(
-        fullName: 'Ada',
-        email: 'ada@x.com',
-        password: 'password1',
-        confirm: 'password1',
-      );
-      final id = auth.currentAccount!.id;
+    test(
+      'session persists across a new AuthService over the same store',
+      () async {
+        await auth.register(
+          fullName: 'Ada',
+          email: 'ada@x.com',
+          password: 'password1',
+          confirm: 'password1',
+        );
+        final id = auth.currentAccount!.id;
 
-      final restored = AuthService(store: store);
-      expect(restored.isSignedIn, isTrue);
-      expect(restored.currentAccount!.id, id);
-    });
+        final restored = AuthService(store: store);
+        expect(restored.isSignedIn, isTrue);
+        expect(restored.currentAccount!.id, id);
+      },
+    );
   });
 }

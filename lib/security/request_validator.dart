@@ -35,8 +35,7 @@ class RequestValidator {
         "That's a lot — try breaking it into smaller requests for better results.",
       );
     }
-    final totalFileSize =
-        fileContents.fold<int>(0, (sum, f) => sum + f.length);
+    final totalFileSize = fileContents.fold<int>(0, (sum, f) => sum + f.length);
     if (totalFileSize > maxTotalFileBytes) {
       return ValidationResult.error(
         'Project is large — Extra AI works best with focused file selections. '

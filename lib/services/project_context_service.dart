@@ -16,9 +16,33 @@ class ProjectContextService {
   final Box _box;
 
   ProjectContext? get(String projectPath) {
-    final raw = _box.get(projectPath.hashCode.toString());
+    final stableKey = ProjectContext.stablePathHash(projectPath);
+    final raw = _box.get(stableKey);
     if (raw is Map) {
       return ProjectContext.fromMap(Map<String, dynamic>.from(raw));
+    }
+
+    final legacyKey = projectPath.hashCode.toString();
+    final legacyRaw = _box.get(legacyKey);
+    if (legacyRaw is Map) {
+      final context = ProjectContext.fromMap(
+        Map<String, dynamic>.from(legacyRaw),
+      );
+      _box.put(context.pathHash, context.toMap());
+      if (context.pathHash != legacyKey) _box.delete(legacyKey);
+      return context;
+    }
+    return null;
+  }
+
+  ProjectContext? getByHash(String pathHash) {
+    final raw = _box.get(pathHash);
+    if (raw is Map) {
+      return ProjectContext.fromMap(Map<String, dynamic>.from(raw));
+    }
+    for (final value in _box.values.whereType<Map>()) {
+      final context = ProjectContext.fromMap(Map<String, dynamic>.from(value));
+      if (context.legacyPathHash == pathHash) return context;
     }
     return null;
   }
@@ -26,10 +50,12 @@ class ProjectContextService {
   /// All known projects, most-recently-analyzed first — feeds the overlay's
   /// project picker and the linking screen's "already linked" state.
   List<ProjectContext> all() {
-    final out = _box.values
-        .whereType<Map>()
-        .map((m) => ProjectContext.fromMap(Map<String, dynamic>.from(m)))
-        .toList();
+    final byPath = <String, ProjectContext>{};
+    for (final map in _box.values.whereType<Map>()) {
+      final context = ProjectContext.fromMap(Map<String, dynamic>.from(map));
+      byPath[context.projectPath] = context;
+    }
+    final out = byPath.values.toList();
     out.sort((a, b) => b.lastAnalyzedAt.compareTo(a.lastAnalyzedAt));
     return out;
   }
@@ -44,9 +70,11 @@ class ProjectContextService {
   }) async {
     final now = DateTime.now();
     final existing = get(projectPath);
-    final context = existing?.copyWith(
+    final context =
+        existing?.copyWith(
           fileNames: fileNames,
           detectedStack: detectedStack,
+          linkedAtOnboarding: existing.linkedAtOnboarding || atOnboarding,
         ) ??
         ProjectContext(
           projectPath: projectPath,

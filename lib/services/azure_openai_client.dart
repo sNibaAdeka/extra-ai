@@ -32,17 +32,15 @@ class AzureOpenAIClient implements CriticModel {
   bool get isConfigured => endpoint.isNotEmpty && apiKey.isNotEmpty;
 
   Uri get _chatUri => Uri.parse(
-      '$endpoint/openai/deployments/$deployment/chat/completions?api-version=$apiVersion');
+    '$endpoint/openai/deployments/$deployment/chat/completions?api-version=$apiVersion',
+  );
 
   @override
   Future<String?> chat(String prompt, {bool jsonMode = true}) async {
     final response = await ReliableApiCaller.callWithRetry(() async {
       final res = await _http.post(
         _chatUri,
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': apiKey,
-        },
+        headers: {'Content-Type': 'application/json', 'api-key': apiKey},
         body: jsonEncode({
           'messages': [
             {'role': 'user', 'content': prompt},
@@ -54,7 +52,9 @@ class AzureOpenAIClient implements CriticModel {
       );
       if (res.statusCode != 200) {
         throw http.ClientException(
-            'Azure OpenAI returned ${res.statusCode}', _chatUri);
+          'Azure OpenAI returned ${res.statusCode}',
+          _chatUri,
+        );
       }
       return res;
     });

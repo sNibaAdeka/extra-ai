@@ -1,3 +1,7 @@
+import 'dart:convert';
+
+import 'package:crypto/crypto.dart';
+
 /// Per-project context, auto-detected and persisted per unique project path.
 /// Lets Extra AI recognize "I've seen this project before" across sessions.
 class ProjectContext {
@@ -22,7 +26,17 @@ class ProjectContext {
   final bool linkedAtOnboarding;
 
   /// Stable key for Hive storage — a hash of the project path.
-  String get pathHash => projectPath.hashCode.toString();
+  String get pathHash => stablePathHash(projectPath);
+
+  /// Legacy key used before v0.1.0. Kept only for local migration/lookups.
+  String get legacyPathHash => projectPath.hashCode.toString();
+
+  /// Deterministic across app launches. Dart's String.hashCode is not suitable
+  /// for persisted project identity.
+  static String stablePathHash(String path) {
+    final normalized = path.trim().replaceAll('\\', '/');
+    return sha1.convert(utf8.encode(normalized)).toString();
+  }
 
   /// Folder name (last path segment) for display.
   String get displayName {
@@ -55,25 +69,26 @@ class ProjectContext {
   }
 
   Map<String, dynamic> toMap() => {
-        'projectPath': projectPath,
-        'detectedStack': detectedStack,
-        'fileNames': fileNames,
-        'firstSeenAt': firstSeenAt.toIso8601String(),
-        'lastAnalyzedAt': lastAnalyzedAt.toIso8601String(),
-        'totalAnalysesCount': totalAnalysesCount,
-        'linkedAtOnboarding': linkedAtOnboarding,
-      };
+    'projectPath': projectPath,
+    'detectedStack': detectedStack,
+    'fileNames': fileNames,
+    'firstSeenAt': firstSeenAt.toIso8601String(),
+    'lastAnalyzedAt': lastAnalyzedAt.toIso8601String(),
+    'totalAnalysesCount': totalAnalysesCount,
+    'linkedAtOnboarding': linkedAtOnboarding,
+  };
 
   factory ProjectContext.fromMap(Map<String, dynamic> map) => ProjectContext(
-        projectPath: map['projectPath'] as String? ?? '',
-        detectedStack: map['detectedStack'] as String? ?? 'Unknown',
-        fileNames: (map['fileNames'] as List?)?.cast<String>() ?? const [],
-        firstSeenAt: DateTime.tryParse(map['firstSeenAt'] as String? ?? '') ??
-            DateTime.now(),
-        lastAnalyzedAt:
-            DateTime.tryParse(map['lastAnalyzedAt'] as String? ?? '') ??
-                DateTime.now(),
-        totalAnalysesCount: map['totalAnalysesCount'] as int? ?? 0,
-        linkedAtOnboarding: map['linkedAtOnboarding'] as bool? ?? false,
-      );
+    projectPath: map['projectPath'] as String? ?? '',
+    detectedStack: map['detectedStack'] as String? ?? 'Unknown',
+    fileNames: (map['fileNames'] as List?)?.cast<String>() ?? const [],
+    firstSeenAt:
+        DateTime.tryParse(map['firstSeenAt'] as String? ?? '') ??
+        DateTime.now(),
+    lastAnalyzedAt:
+        DateTime.tryParse(map['lastAnalyzedAt'] as String? ?? '') ??
+        DateTime.now(),
+    totalAnalysesCount: map['totalAnalysesCount'] as int? ?? 0,
+    linkedAtOnboarding: map['linkedAtOnboarding'] as bool? ?? false,
+  );
 }

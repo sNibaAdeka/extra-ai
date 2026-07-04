@@ -14,7 +14,7 @@ class KeycapBadge extends StatelessWidget {
 
   /// Single-string convenience: `KeycapBadge.combo('⌘⇧E')` splits per rune.
   KeycapBadge.combo(String combo, {super.key, this.size = KeycapSize.medium})
-      : keys = combo.runes.map(String.fromCharCode).toList();
+    : keys = combo.runes.map(String.fromCharCode).toList();
 
   final List<String> keys;
   final KeycapSize size;
@@ -76,12 +76,15 @@ class _PressableScaleState extends State<PressableScale> {
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
-      cursor:
-          widget.onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
+      cursor: widget.onTap == null
+          ? MouseCursor.defer
+          : SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: GestureDetector(
-        onTapDown: widget.onTap == null ? null : (_) => setState(() => _down = true),
+        onTapDown: widget.onTap == null
+            ? null
+            : (_) => setState(() => _down = true),
         onTapCancel: () => setState(() => _down = false),
         onTapUp: (_) => setState(() => _down = false),
         onTap: widget.onTap,
@@ -223,8 +226,10 @@ class SegmentedControl<T> extends StatelessWidget {
               onTap: () => onChanged(options[i]),
               child: AnimatedContainer(
                 duration: AppTheme.microMs,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: options[i] == value
                       ? AppTheme.accent

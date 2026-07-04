@@ -21,7 +21,8 @@ class StackDetector {
 
     if (hasPackageJson) {
       final pkg = packageJson.toLowerCase();
-      final hasNext = names.contains('next.config.js') ||
+      final hasNext =
+          names.contains('next.config.js') ||
           names.contains('next.config.mjs') ||
           names.contains('next.config.ts') ||
           _dependsOn(pkg, 'next');

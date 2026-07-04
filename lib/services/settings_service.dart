@@ -31,8 +31,7 @@ class SettingsService {
 
   /// Whether the user has passed the project-linking onboarding step (even if
   /// they skipped it) — gates the main-window funnel.
-  bool get linkingComplete =>
-      _box.get('linkingComplete', defaultValue: false);
+  bool get linkingComplete => _box.get('linkingComplete', defaultValue: false);
   Future<void> setLinkingComplete(bool v) => _box.put('linkingComplete', v);
 
   /// The last project selected in the overlay's project picker (its pathHash),

@@ -23,11 +23,10 @@ enum ExperienceLevel {
   final String label;
   final String description;
 
-  static ExperienceLevel fromId(String id) =>
-      ExperienceLevel.values.firstWhere(
-        (e) => e.id == id,
-        orElse: () => ExperienceLevel.promptFirst,
-      );
+  static ExperienceLevel fromId(String id) => ExperienceLevel.values.firstWhere(
+    (e) => e.id == id,
+    orElse: () => ExperienceLevel.promptFirst,
+  );
 }
 
 /// What the user mostly builds — affects which issue categories to prioritize.
@@ -60,9 +59,9 @@ enum ProjectFocus {
   final String description;
 
   static ProjectFocus fromId(String id) => ProjectFocus.values.firstWhere(
-        (e) => e.id == id,
-        orElse: () => ProjectFocus.personal,
-      );
+    (e) => e.id == id,
+    orElse: () => ProjectFocus.personal,
+  );
 }
 
 /// How verbose the issue descriptions should be.
@@ -85,9 +84,9 @@ enum ToneLevel {
   final String description;
 
   static ToneLevel fromId(String id) => ToneLevel.values.firstWhere(
-        (e) => e.id == id,
-        orElse: () => ToneLevel.explained,
-      );
+    (e) => e.id == id,
+    orElse: () => ToneLevel.explained,
+  );
 }
 
 /// Collected once during onboarding; editable in settings. Persisted locally
@@ -125,21 +124,21 @@ class UserProfile {
   }
 
   Map<String, dynamic> toMap() => {
-        'experienceLevel': experienceLevel.id,
-        'primaryTools': primaryTools,
-        'projectFocus': projectFocus.id,
-        'tonePreference': tonePreference.id,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'experienceLevel': experienceLevel.id,
+    'primaryTools': primaryTools,
+    'projectFocus': projectFocus.id,
+    'tonePreference': tonePreference.id,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
-        experienceLevel:
-            ExperienceLevel.fromId(map['experienceLevel'] as String? ?? ''),
-        primaryTools:
-            (map['primaryTools'] as List?)?.cast<String>() ?? const [],
-        projectFocus: ProjectFocus.fromId(map['projectFocus'] as String? ?? ''),
-        tonePreference: ToneLevel.fromId(map['tonePreference'] as String? ?? ''),
-        createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
-            DateTime.now(),
-      );
+    experienceLevel: ExperienceLevel.fromId(
+      map['experienceLevel'] as String? ?? '',
+    ),
+    primaryTools: (map['primaryTools'] as List?)?.cast<String>() ?? const [],
+    projectFocus: ProjectFocus.fromId(map['projectFocus'] as String? ?? ''),
+    tonePreference: ToneLevel.fromId(map['tonePreference'] as String? ?? ''),
+    createdAt:
+        DateTime.tryParse(map['createdAt'] as String? ?? '') ?? DateTime.now(),
+  );
 }

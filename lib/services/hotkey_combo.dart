@@ -37,14 +37,30 @@ PhysicalKeyboardKey? _keyFor(String char) {
   const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const digits = '0123456789';
   final letterKeys = [
-    PhysicalKeyboardKey.keyA, PhysicalKeyboardKey.keyB, PhysicalKeyboardKey.keyC, //
-    PhysicalKeyboardKey.keyD, PhysicalKeyboardKey.keyE, PhysicalKeyboardKey.keyF,
-    PhysicalKeyboardKey.keyG, PhysicalKeyboardKey.keyH, PhysicalKeyboardKey.keyI,
-    PhysicalKeyboardKey.keyJ, PhysicalKeyboardKey.keyK, PhysicalKeyboardKey.keyL,
-    PhysicalKeyboardKey.keyM, PhysicalKeyboardKey.keyN, PhysicalKeyboardKey.keyO,
-    PhysicalKeyboardKey.keyP, PhysicalKeyboardKey.keyQ, PhysicalKeyboardKey.keyR,
-    PhysicalKeyboardKey.keyS, PhysicalKeyboardKey.keyT, PhysicalKeyboardKey.keyU,
-    PhysicalKeyboardKey.keyV, PhysicalKeyboardKey.keyW, PhysicalKeyboardKey.keyX,
+    PhysicalKeyboardKey.keyA,
+    PhysicalKeyboardKey.keyB,
+    PhysicalKeyboardKey.keyC, //
+    PhysicalKeyboardKey.keyD,
+    PhysicalKeyboardKey.keyE,
+    PhysicalKeyboardKey.keyF,
+    PhysicalKeyboardKey.keyG,
+    PhysicalKeyboardKey.keyH,
+    PhysicalKeyboardKey.keyI,
+    PhysicalKeyboardKey.keyJ,
+    PhysicalKeyboardKey.keyK,
+    PhysicalKeyboardKey.keyL,
+    PhysicalKeyboardKey.keyM,
+    PhysicalKeyboardKey.keyN,
+    PhysicalKeyboardKey.keyO,
+    PhysicalKeyboardKey.keyP,
+    PhysicalKeyboardKey.keyQ,
+    PhysicalKeyboardKey.keyR,
+    PhysicalKeyboardKey.keyS,
+    PhysicalKeyboardKey.keyT,
+    PhysicalKeyboardKey.keyU,
+    PhysicalKeyboardKey.keyV,
+    PhysicalKeyboardKey.keyW,
+    PhysicalKeyboardKey.keyX,
     PhysicalKeyboardKey.keyY, PhysicalKeyboardKey.keyZ,
   ];
   final digitKeys = [

@@ -37,8 +37,8 @@ class WindowArgs {
 
   /// Encode for `WindowController.create(WindowConfiguration(arguments: ...))`.
   static String encodeOverlay({String? activeUserId}) => jsonEncode({
-        'businessId': _overlayBusinessId,
-        // ignore: use_null_aware_elements
-        if (activeUserId != null) 'activeUserId': activeUserId,
-      });
+    'businessId': _overlayBusinessId,
+    // ignore: use_null_aware_elements
+    if (activeUserId != null) 'activeUserId': activeUserId,
+  });
 }

@@ -22,7 +22,7 @@ class ProjectLinkingScreen extends StatefulWidget {
   });
 
   final ProjectContextService projects;
-  final VoidCallback onContinue;
+  final Future<void> Function() onContinue;
 
   /// Test/preview seam: supply detected projects instead of scanning the real
   /// filesystem. Null in production (a real scan runs).
@@ -34,8 +34,11 @@ class ProjectLinkingScreen extends StatefulWidget {
 
 class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
   bool _scanning = true;
+  bool _continuing = false;
   List<DetectedProject> _detected = const [];
   final Set<String> _checked = {};
+  String? _scanNotice;
+  String? _continueError;
 
   @override
   void initState() {
@@ -44,11 +47,27 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
   }
 
   Future<void> _scan() async {
-    final found = await (widget.detectOverride?.call() ??
-        ProjectDetectionService.detectAll());
+    var notice = '';
+    var found = const <DetectedProject>[];
+    try {
+      final future =
+          widget.detectOverride?.call() ?? ProjectDetectionService.detectAll();
+      found = await future.timeout(
+        const Duration(seconds: 6),
+        onTimeout: () {
+          notice =
+              'Automatic scan took too long. You can link a folder manually or skip for now.';
+          return const <DetectedProject>[];
+        },
+      );
+    } catch (_) {
+      notice =
+          'Automatic scan could not read your recent projects. You can link a folder manually or skip for now.';
+    }
     if (!mounted) return;
     setState(() {
       _detected = found;
+      _scanNotice = notice.isEmpty ? null : notice;
       _scanning = false;
     });
   }
@@ -72,15 +91,30 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
   }
 
   Future<void> _linkAndContinue() async {
-    for (final d in _detected.where((d) => _checked.contains(d.path))) {
-      await widget.projects.link(
-        projectPath: d.path,
-        fileNames: const [],
-        detectedStack: d.stack,
-        atOnboarding: true,
-      );
+    if (_continuing) return;
+    setState(() {
+      _continuing = true;
+      _continueError = null;
+    });
+
+    try {
+      for (final d in _detected.where((d) => _checked.contains(d.path))) {
+        await widget.projects.link(
+          projectPath: d.path,
+          fileNames: const [],
+          detectedStack: d.stack,
+          atOnboarding: true,
+        );
+      }
+      await widget.onContinue();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _continuing = false;
+        _continueError =
+            'Could not save setup locally. Try again, or skip linking for now.';
+      });
     }
-    widget.onContinue();
   }
 
   bool get _allChecked =>
@@ -112,8 +146,10 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Link your projects',
-                  style: AppTheme.display(size: 30, weight: FontWeight.w600)),
+              Text(
+                'Link your projects',
+                style: AppTheme.display(size: 30, weight: FontWeight.w600),
+              ),
               const SizedBox(height: 8),
               Text(
                 'Extra AI can detect projects you’re already working on. '
@@ -149,6 +185,10 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
               ],
 
               Expanded(child: _body()),
+              if (_continueError != null) ...[
+                const SizedBox(height: 10),
+                _InlineNotice(text: _continueError!, isError: true),
+              ],
               const SizedBox(height: 18),
               Row(
                 children: [
@@ -162,10 +202,13 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
                   SizedBox(
                     width: 200,
                     child: GradientButton(
-                      label: _checked.isEmpty
-                          ? (_detected.isEmpty ? 'Skip for now' : 'Skip')
-                          : 'Link ${_checked.length} & continue',
-                      onPressed: _linkAndContinue,
+                      label: _continuing
+                          ? 'Saving...'
+                          : (_checked.isEmpty
+                                ? (_detected.isEmpty ? 'Skip for now' : 'Skip')
+                                : 'Link ${_checked.length} & continue'),
+                      enabled: !_continuing,
+                      onPressed: _continuing ? null : _linkAndContinue,
                     ),
                   ),
                 ],
@@ -188,11 +231,15 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
               width: 16,
               height: 16,
               child: CircularProgressIndicator(
-                  strokeWidth: 2, color: AppTheme.accent),
+                strokeWidth: 2,
+                color: AppTheme.accent,
+              ),
             ),
             const SizedBox(width: 12),
-            Text('Scanning for projects...',
-                style: AppTheme.ui(size: 13, color: AppTheme.textDim)),
+            Text(
+              'Scanning for projects...',
+              style: AppTheme.ui(size: 13, color: AppTheme.textDim),
+            ),
           ],
         ),
       );
@@ -206,11 +253,14 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('No projects detected automatically',
-                style: AppTheme.ui(size: 14, weight: FontWeight.w600)),
+            Text(
+              'No projects detected automatically',
+              style: AppTheme.ui(size: 14, weight: FontWeight.w600),
+            ),
             const SizedBox(height: 6),
             Text(
-              'You can link one manually, or skip and add projects later.',
+              _scanNotice ??
+                  'You can link one manually, or skip and add projects later.',
               style: AppTheme.ui(size: 13, color: AppTheme.textDim),
             ),
             const SizedBox(height: 14),
@@ -232,8 +282,9 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
         final d = _detected[i];
         final checked = _checked.contains(d.path);
         return PressableScale(
-          onTap: () => setState(() =>
-              checked ? _checked.remove(d.path) : _checked.add(d.path)),
+          onTap: () => setState(
+            () => checked ? _checked.remove(d.path) : _checked.add(d.path),
+          ),
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -253,19 +304,26 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        Text(d.name,
+                      Row(
+                        children: [
+                          Text(
+                            d.name,
                             style: AppTheme.ui(
-                                size: 14, weight: FontWeight.w600)),
-                        const SizedBox(width: 8),
-                        _stackBadge(d.stack),
-                      ]),
+                              size: 14,
+                              weight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _stackBadge(d.stack),
+                        ],
+                      ),
                       const SizedBox(height: 2),
-                      Text('${d.source} · ${d.path}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTheme.ui(
-                              size: 11, color: AppTheme.textDim)),
+                      Text(
+                        '${d.source} · ${d.path}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTheme.ui(size: 11, color: AppTheme.textDim),
+                      ),
                     ],
                   ),
                 ),
@@ -278,22 +336,22 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
   }
 
   Widget _checkbox(bool checked) => Container(
-        width: 20,
-        height: 20,
-        decoration: BoxDecoration(
-          color: checked ? AppTheme.accent : AppTheme.bgVoid,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: checked
-                ? AppTheme.accent
-                : AppTheme.textSecondary.withValues(alpha: 0.55),
-            width: 1.5,
-          ),
-        ),
-        child: checked
-            ? const Icon(Icons.check, size: 14, color: AppTheme.onAccent)
-            : null,
-      );
+    width: 20,
+    height: 20,
+    decoration: BoxDecoration(
+      color: checked ? AppTheme.accent : AppTheme.bgVoid,
+      borderRadius: BorderRadius.circular(6),
+      border: Border.all(
+        color: checked
+            ? AppTheme.accent
+            : AppTheme.textSecondary.withValues(alpha: 0.55),
+        width: 1.5,
+      ),
+    ),
+    child: checked
+        ? const Icon(Icons.check, size: 14, color: AppTheme.onAccent)
+        : null,
+  );
 
   Widget _stackBadge(String stack) {
     if (stack == 'Unknown') return const SizedBox.shrink();
@@ -303,8 +361,10 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
         borderRadius: BorderRadius.circular(100),
         border: Border.all(color: AppTheme.borderSubtle),
       ),
-      child: Text(stack,
-          style: AppTheme.ui(size: 10, color: AppTheme.textSecondary)),
+      child: Text(
+        stack,
+        style: AppTheme.ui(size: 10, color: AppTheme.textSecondary),
+      ),
     );
   }
 
@@ -331,5 +391,42 @@ class _ProjectLinkingScreenState extends State<ProjectLinkingScreen> {
     } catch (_) {
       return 'Unknown';
     }
+  }
+}
+
+class _InlineNotice extends StatelessWidget {
+  const _InlineNotice({required this.text, this.isError = false});
+
+  final String text;
+  final bool isError;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isError ? AppTheme.signalRed : AppTheme.signalOrange;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            isError ? Icons.error_outline : Icons.info_outline,
+            size: 15,
+            color: color,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

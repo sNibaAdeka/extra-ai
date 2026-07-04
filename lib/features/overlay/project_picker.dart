@@ -33,8 +33,10 @@ class ProjectPicker extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text('Working on: ',
-              style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
+          Text(
+            'Working on: ',
+            style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+          ),
           Expanded(child: _body(context)),
         ],
       ),
@@ -43,25 +45,34 @@ class ProjectPicker extends StatelessWidget {
 
   Widget _body(BuildContext context) {
     if (projects.isEmpty) {
-      return Row(children: [
-        Text('No project selected',
-            style: AppTheme.ui(size: 12, color: AppTheme.textSecondary)),
-        const SizedBox(width: 8),
-        PressableScale(
-          onTap: onAddProject,
-          child: Text('Link a project',
+      return Row(
+        children: [
+          Text(
+            'No project selected',
+            style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
+          ),
+          const SizedBox(width: 8),
+          PressableScale(
+            onTap: onAddProject,
+            child: Text(
+              'Link a project',
               style: AppTheme.ui(
-                  size: 12,
-                  weight: FontWeight.w600,
-                  color: AppTheme.accent)),
-        ),
-      ]);
+                size: 12,
+                weight: FontWeight.w600,
+                color: AppTheme.accent,
+              ),
+            ),
+          ),
+        ],
+      );
     }
 
     if (projects.length == 1) {
       // One project — a static label, no dropdown to click through.
-      return Text(projects.first.displayName,
-          style: AppTheme.ui(size: 12, weight: FontWeight.w600));
+      return Text(
+        projects.first.displayName,
+        style: AppTheme.ui(size: 12, weight: FontWeight.w600),
+      );
     }
 
     final current = selected ?? projects.first;
@@ -81,23 +92,32 @@ class ProjectPicker extends StatelessWidget {
           for (final p in projects)
             PopupMenuItem(
               value: p.pathHash,
-              child: Text(p.displayName,
-                  style: AppTheme.ui(size: 13, color: AppTheme.textPrimary)),
+              child: Text(
+                p.displayName,
+                style: AppTheme.ui(size: 13, color: AppTheme.textPrimary),
+              ),
             ),
           const PopupMenuDivider(),
           PopupMenuItem(
             value: '__add__',
-            child: Text('+ Add new project',
-                style: AppTheme.ui(size: 13, color: AppTheme.accent)),
+            child: Text(
+              '+ Add new project',
+              style: AppTheme.ui(size: 13, color: AppTheme.accent),
+            ),
           ),
         ],
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(current.displayName,
-                style: AppTheme.ui(size: 12, weight: FontWeight.w600)),
-            const Icon(Icons.keyboard_arrow_down,
-                size: 16, color: AppTheme.textDim),
+            Text(
+              current.displayName,
+              style: AppTheme.ui(size: 12, weight: FontWeight.w600),
+            ),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              size: 16,
+              color: AppTheme.textDim,
+            ),
           ],
         ),
       ),

@@ -19,21 +19,21 @@ class AppNotification {
   final DateTime timestamp;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'icon': icon,
-        'title': title,
-        'body': body,
-        'timestamp': timestamp.toIso8601String(),
-      };
+    'id': id,
+    'icon': icon,
+    'title': title,
+    'body': body,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
   factory AppNotification.fromMap(Map<String, dynamic> m) => AppNotification(
-        id: m['id'] as String? ?? '',
-        icon: m['icon'] as String? ?? '🔔',
-        title: m['title'] as String? ?? '',
-        body: m['body'] as String? ?? '',
-        timestamp: DateTime.tryParse(m['timestamp'] as String? ?? '') ??
-            DateTime.now(),
-      );
+    id: m['id'] as String? ?? '',
+    icon: m['icon'] as String? ?? '🔔',
+    title: m['title'] as String? ?? '',
+    body: m['body'] as String? ?? '',
+    timestamp:
+        DateTime.tryParse(m['timestamp'] as String? ?? '') ?? DateTime.now(),
+  );
 }
 
 /// Local notification store. Seeds the first-run welcome card once; dismiss
@@ -49,22 +49,29 @@ class NotificationsService {
   Future<void> seedIfNeeded() async {
     if (_box.get(_seededKey) == true) return;
     await _box.put(_seededKey, true);
-    await add(AppNotification(
-      id: 'welcome',
-      icon: '👋',
-      title: 'Welcome to Extra AI!',
-      body: 'Press ⌘⇧E to analyze anything on your screen. '
-          'Secrets are redacted automatically before anything is sent.',
-      timestamp: DateTime.now(),
-    ));
+    await add(
+      AppNotification(
+        id: 'welcome',
+        icon: '👋',
+        title: 'Welcome to Extra AI!',
+        body:
+            'Press ⌘⇧E to analyze anything on your screen. '
+            'Secrets are redacted automatically before anything is sent.',
+        timestamp: DateTime.now(),
+      ),
+    );
   }
 
-  List<AppNotification> get all => _box.keys
-      .where((k) => k != _seededKey)
-      .map((k) =>
-          AppNotification.fromMap(Map<String, dynamic>.from(_box.get(k) as Map)))
-      .toList()
-    ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+  List<AppNotification> get all =>
+      _box.keys
+          .where((k) => k != _seededKey)
+          .map(
+            (k) => AppNotification.fromMap(
+              Map<String, dynamic>.from(_box.get(k) as Map),
+            ),
+          )
+          .toList()
+        ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
 
   Future<void> add(AppNotification n) => _box.put(n.id, n.toMap());
 

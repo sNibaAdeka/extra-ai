@@ -54,18 +54,19 @@ class _HotkeyCaptureState extends State<HotkeyCapture> {
     return KeyEventResult.handled;
   }
 
-  static bool _isModifier(LogicalKeyboardKey key) => _modifierKeys.contains(key);
+  static bool _isModifier(LogicalKeyboardKey key) =>
+      _modifierKeys.contains(key);
 
   static final Set<LogicalKeyboardKey> _modifierKeys = {
-        LogicalKeyboardKey.shiftLeft,
-        LogicalKeyboardKey.shiftRight,
-        LogicalKeyboardKey.metaLeft,
-        LogicalKeyboardKey.metaRight,
-        LogicalKeyboardKey.altLeft,
-        LogicalKeyboardKey.altRight,
-        LogicalKeyboardKey.controlLeft,
-        LogicalKeyboardKey.controlRight,
-      };
+    LogicalKeyboardKey.shiftLeft,
+    LogicalKeyboardKey.shiftRight,
+    LogicalKeyboardKey.metaLeft,
+    LogicalKeyboardKey.metaRight,
+    LogicalKeyboardKey.altLeft,
+    LogicalKeyboardKey.altRight,
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.controlRight,
+  };
 
   static String _displayKey(LogicalKeyboardKey key) {
     final label = key.keyLabel;
@@ -89,8 +90,11 @@ class _HotkeyCaptureState extends State<HotkeyCapture> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.keyboard_outlined,
-                size: 16, color: AppTheme.accent),
+            const Icon(
+              Icons.keyboard_outlined,
+              size: 16,
+              color: AppTheme.accent,
+            ),
             const SizedBox(width: 8),
             Text(
               widget.prompt,

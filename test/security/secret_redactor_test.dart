@@ -13,14 +13,20 @@ void main() {
     test('redacts OpenAI-style sk- keys', () {
       const input = 'OPENAI_KEY=sk-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890';
       final result = SecretRedactor.redact(input);
-      expect(result, isNot(contains('sk-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890')));
+      expect(
+        result,
+        isNot(contains('sk-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890')),
+      );
       expect(result, contains('[REDACTED_BY_EXTRA_AI]'));
     });
 
     test('redacts Google API keys (AIza...)', () {
       const input = 'key: AIzaSyD-1234567890abcdefghijklmnopqrstuvw';
       final result = SecretRedactor.redact(input);
-      expect(result, isNot(contains('AIzaSyD-1234567890abcdefghijklmnopqrstuvw')));
+      expect(
+        result,
+        isNot(contains('AIzaSyD-1234567890abcdefghijklmnopqrstuvw')),
+      );
       expect(result, contains('[REDACTED_BY_EXTRA_AI]'));
     });
 

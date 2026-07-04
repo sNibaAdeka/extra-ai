@@ -15,17 +15,17 @@ class Account {
   final DateTime createdAt;
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'fullName': fullName,
-        'email': email,
-        'createdAt': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'fullName': fullName,
+    'email': email,
+    'createdAt': createdAt.toIso8601String(),
+  };
 
   factory Account.fromMap(Map<String, dynamic> map) => Account(
-        id: map['id'] as String? ?? '',
-        fullName: map['fullName'] as String? ?? '',
-        email: map['email'] as String? ?? '',
-        createdAt: DateTime.tryParse(map['createdAt'] as String? ?? '') ??
-            DateTime.now(),
-      );
+    id: map['id'] as String? ?? '',
+    fullName: map['fullName'] as String? ?? '',
+    email: map['email'] as String? ?? '',
+    createdAt:
+        DateTime.tryParse(map['createdAt'] as String? ?? '') ?? DateTime.now(),
+  );
 }

@@ -24,3 +24,24 @@ const ExtraAIResponse kDemoFallbackResponse = ExtraAIResponse(
     'The layout grid in style.css has no breakpoint below 768px — content overflows horizontally on mobile widths.',
   ],
 );
+
+ExtraAIResponse buildContextualFallbackResponse({
+  required String roughPrompt,
+  required List<String> fileNames,
+}) {
+  final target = fileNames.isEmpty
+      ? 'the selected project'
+      : '@${fileNames.first}';
+  final trimmed = roughPrompt.trim().isEmpty
+      ? 'improve the current UI'
+      : roughPrompt.trim();
+  return ExtraAIResponse(
+    improvedPrompt:
+        'In $target, implement this request: "$trimmed". First inspect adjacent related files in the selected project, then make the smallest safe change that matches the existing Extra AI visual system. Preserve current behavior, avoid unrelated refactors, and verify the result on the active screen size. If the change affects UI, check spacing, contrast, responsiveness, and hover states before reporting completion.',
+    issues: const [
+      'Live Gemini was unavailable, so this fallback prompt was generated locally from the current request instead of reusing an old canned result.',
+      'Make sure the selected project folder is correct before applying this prompt in a coding tool.',
+      'If the same API error repeats, check Gemini quota or billing for the configured API key.',
+    ],
+  );
+}

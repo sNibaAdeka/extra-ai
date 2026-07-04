@@ -36,3 +36,8 @@ lib/**/secrets.dart
 # Hive local data (device-only, never committed)
 *.hive
 *.lock
+
+# Local secrets — never commit
+secrets/
+run_dev.sh
+.codex/

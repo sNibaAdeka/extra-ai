@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import '../models/analysis_preferences.dart';
+import '../models/project_audit_report.dart';
 import '../models/project_context.dart';
+import '../models/project_intelligence.dart';
 import '../models/prompt_history_entry.dart';
 import '../models/user_profile.dart';
 import 'knowledge_base_service.dart';
@@ -14,6 +17,9 @@ class ExtraAIRequestBuilder {
     required this.userProfile,
     required this.projectContext,
     required this.recentHistory,
+    this.auditReport,
+    this.projectIntelligence,
+    this.preferences = const AnalysisPreferences(),
     this.frustrationDetected = false,
   });
 
@@ -22,14 +28,19 @@ class ExtraAIRequestBuilder {
 
   /// Oldest-first slice (most recent last), already capped upstream.
   final List<PromptHistoryEntry> recentHistory;
+  final ProjectAuditReport? auditReport;
+  final ProjectIntelligence? projectIntelligence;
+  final AnalysisPreferences preferences;
   final bool frustrationDetected;
 
   /// The context block prepended to the request.
   String buildContextBlock() {
     final stackKnowledge = KnowledgeBaseService.getStackPatterns(
-        _knowledgeKeyFor(projectContext.detectedStack));
-    final primaryTool =
-        userProfile.primaryTools.isNotEmpty ? userProfile.primaryTools.first : 'cursor';
+      _knowledgeKeyFor(projectContext.detectedStack),
+    );
+    final primaryTool = userProfile.primaryTools.isNotEmpty
+        ? userProfile.primaryTools.first
+        : 'cursor';
     final toolSyntax = KnowledgeBaseService.getToolSyntax(primaryTool);
     final securityPatterns = KnowledgeBaseService.getSecurityPatterns();
     final designHeuristics = KnowledgeBaseService.getDesignHeuristics();
@@ -37,9 +48,11 @@ class ExtraAIRequestBuilder {
     final historyText = recentHistory.isEmpty
         ? 'No previous analyses for this project.'
         : recentHistory
-            .map((e) =>
-                '- User asked: "${e.roughPrompt}" → Improved to: "${_preview(e.improvedPrompt)}"')
-            .join('\n');
+              .map(
+                (e) =>
+                    '- User asked: "${e.roughPrompt}" → Improved to: "${_preview(e.improvedPrompt)}"',
+              )
+              .join('\n');
 
     final frustrationNote = frustrationDetected
         ? '''
@@ -56,18 +69,24 @@ USER PROFILE:
 - Building: ${userProfile.projectFocus.description}
 - Preferred tone: ${userProfile.tonePreference.description}
 
-PROJECT CONTEXT:
-- Stack: ${projectContext.detectedStack}
-- Files in project: ${projectContext.fileNames.join(', ')}
-- This is analysis #${projectContext.totalAnalysesCount + 1} for this project
+	PROJECT CONTEXT:
+	- Stack: ${projectContext.detectedStack}
+	- Files in project: ${projectContext.fileNames.join(', ')}
+	- This is analysis #${projectContext.totalAnalysesCount + 1} for this project
 
-KNOWLEDGE BASE — known patterns for this stack:
+${projectIntelligence?.toPromptBlock() ?? 'PROJECT INTELLIGENCE:\n- Not available yet; rely on provided files and ask the coding agent to inspect related files if needed.'}
+
+${auditReport?.toPromptBlock() ?? 'LOCAL AUDIT:\n- Not run for this request.'}
+
+${preferences.toPromptDirectives()}
+
+	KNOWLEDGE BASE — known patterns for this stack:
 ${stackKnowledge != null ? jsonEncode(stackKnowledge) : 'No specific patterns for this stack — use general best practices.'}
 
 TARGET TOOL FORMATTING CONVENTION:
 ${toolSyntax != null ? '${toolSyntax['convention']} ${toolSyntax['format_hint']}' : 'Use general clear technical instructions.'}
 
-SECURITY PATTERNS TO CHECK (only apply if issues_enabled=true):
+	SECURITY PATTERNS TO CHECK (only apply if security_audit=true):
 ${jsonEncode(securityPatterns)}
 
 DESIGN HEURISTICS FOR VISUAL ANALYSIS:
@@ -90,11 +109,12 @@ CURRENT REQUEST:
 PROJECT FILES:
 $fileContents
 
-USER PROMPT:
-$roughPrompt
+	USER PROMPT:
+	$roughPrompt
 
-issues_enabled: $issuesEnabled
-''';
+	bug_audit: ${preferences.bugAudit && issuesEnabled}
+	security_audit: ${preferences.securityAudit && issuesEnabled}
+	''';
   }
 
   /// Resolves a display stack label ("React + Tailwind", "Vanilla HTML/CSS/JS")

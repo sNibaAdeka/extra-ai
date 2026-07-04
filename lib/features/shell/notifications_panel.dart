@@ -42,9 +42,10 @@ class NotificationsPanel extends StatelessWidget {
             border: Border.all(color: AppTheme.borderSubtle),
             boxShadow: const [
               BoxShadow(
-                  color: Color(0x66000000),
-                  blurRadius: 40,
-                  offset: Offset(0, 16)),
+                color: Color(0x66000000),
+                blurRadius: 40,
+                offset: Offset(0, 16),
+              ),
             ],
           ),
           padding: const EdgeInsets.all(14),
@@ -54,14 +55,17 @@ class NotificationsPanel extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text('Notifications',
-                      style: AppTheme.ui(size: 14, weight: FontWeight.w600)),
+                  Text(
+                    'Notifications',
+                    style: AppTheme.ui(size: 14, weight: FontWeight.w600),
+                  ),
                   const Spacer(),
                   PressableScale(
                     onTap: onClearAll,
-                    child: Text('Clear all',
-                        style:
-                            AppTheme.ui(size: 12, color: AppTheme.textDim)),
+                    child: Text(
+                      'Clear all',
+                      style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+                    ),
                   ),
                 ],
               ),
@@ -70,9 +74,10 @@ class NotificationsPanel extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 28),
                   child: Center(
-                    child: Text('No notifications',
-                        style: AppTheme.ui(
-                            size: 13, color: AppTheme.textDim)),
+                    child: Text(
+                      'No notifications',
+                      style: AppTheme.ui(size: 13, color: AppTheme.textDim),
+                    ),
                   ),
                 )
               else
@@ -124,20 +129,25 @@ class _NotificationCard extends StatelessWidget {
               color: AppTheme.accent.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(notification.icon,
-                style: const TextStyle(fontSize: 16)),
+            child: Text(
+              notification.icon,
+              style: const TextStyle(fontSize: 16),
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(notification.title,
-                    style: AppTheme.ui(size: 13, weight: FontWeight.w600)),
+                Text(
+                  notification.title,
+                  style: AppTheme.ui(size: 13, weight: FontWeight.w600),
+                ),
                 const SizedBox(height: 3),
-                Text(notification.body,
-                    style: AppTheme.ui(
-                        size: 12, color: AppTheme.textSecondary)),
+                Text(
+                  notification.body,
+                  style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
+                ),
                 const SizedBox(height: 5),
                 Text(
                   '${notification.timestamp.month}/${notification.timestamp.day}/${notification.timestamp.year}',

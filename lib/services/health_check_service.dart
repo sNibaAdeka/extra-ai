@@ -30,8 +30,7 @@ class AppHealth {
   /// True when everything configured is confirmed working.
   bool get isHealthy =>
       generator == ServiceStatus.healthy &&
-      (critic == ServiceStatus.healthy ||
-          critic == ServiceStatus.unconfigured);
+      (critic == ServiceStatus.healthy || critic == ServiceStatus.unconfigured);
 }
 
 /// Signature of a lightweight connectivity/auth probe — a minimal test call

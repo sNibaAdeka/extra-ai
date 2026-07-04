@@ -15,14 +15,11 @@ void main() {
 
     test('retries once after a failure, then succeeds', () async {
       var calls = 0;
-      final result = await ReliableApiCaller.callWithRetry(
-        () async {
-          calls++;
-          if (calls == 1) throw Exception('transient');
-          return 'recovered';
-        },
-        backoffBase: const Duration(milliseconds: 1),
-      );
+      final result = await ReliableApiCaller.callWithRetry(() async {
+        calls++;
+        if (calls == 1) throw Exception('transient');
+        return 'recovered';
+      }, backoffBase: const Duration(milliseconds: 1));
       expect(result, 'recovered');
       expect(calls, 2);
     });
@@ -30,13 +27,10 @@ void main() {
     test('rethrows the last error after max attempts', () async {
       var calls = 0;
       await expectLater(
-        ReliableApiCaller.callWithRetry<String>(
-          () async {
-            calls++;
-            throw StateError('down');
-          },
-          backoffBase: const Duration(milliseconds: 1),
-        ),
+        ReliableApiCaller.callWithRetry<String>(() async {
+          calls++;
+          throw StateError('down');
+        }, backoffBase: const Duration(milliseconds: 1)),
         throwsStateError,
       );
       expect(calls, 2); // default maxAttempts

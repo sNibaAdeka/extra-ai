@@ -21,12 +21,12 @@ class _FakeCritic implements CriticModel {
 }
 
 UserProfile _profile() => UserProfile(
-      experienceLevel: ExperienceLevel.vibeCoder,
-      primaryTools: const ['Cursor'],
-      projectFocus: ProjectFocus.clientSites,
-      tonePreference: ToneLevel.explained,
-      createdAt: DateTime(2026, 1, 1),
-    );
+  experienceLevel: ExperienceLevel.vibeCoder,
+  primaryTools: const ['Cursor'],
+  projectFocus: ProjectFocus.clientSites,
+  tonePreference: ToneLevel.explained,
+  createdAt: DateTime(2026, 1, 1),
+);
 
 const _draft = ExtraAIResponse(
   improvedPrompt: 'In @style.css change .cta background to #B5E04A.',
@@ -69,24 +69,32 @@ void main() {
       expect(result.correctionInstruction, contains('style.css'));
     });
 
-    test('embeds the draft, ground-truth files, and experience level in the check prompt',
-        () async {
-      final critic = _FakeCritic(
-          reply: '{"passed": true, "failed_checks": [], "correction_instruction": null}');
-      final service = VerificationService(critic: critic);
-      await service.verify(
-        draft: _draft,
-        originalFileContents: 'GROUND_TRUTH_MARKER',
-        userProfile: _profile(),
-      );
-      expect(critic.lastPrompt, contains('.cta background'));
-      expect(critic.lastPrompt, contains('GROUND_TRUTH_MARKER'));
-      expect(critic.lastPrompt, contains(_profile().experienceLevel.description));
-    });
+    test(
+      'embeds the draft, ground-truth files, and experience level in the check prompt',
+      () async {
+        final critic = _FakeCritic(
+          reply:
+              '{"passed": true, "failed_checks": [], "correction_instruction": null}',
+        );
+        final service = VerificationService(critic: critic);
+        await service.verify(
+          draft: _draft,
+          originalFileContents: 'GROUND_TRUTH_MARKER',
+          userProfile: _profile(),
+        );
+        expect(critic.lastPrompt, contains('.cta background'));
+        expect(critic.lastPrompt, contains('GROUND_TRUTH_MARKER'));
+        expect(
+          critic.lastPrompt,
+          contains(_profile().experienceLevel.description),
+        );
+      },
+    );
 
     test('returns null (unavailable) on malformed critic output', () async {
-      final service =
-          VerificationService(critic: _FakeCritic(reply: 'not json'));
+      final service = VerificationService(
+        critic: _FakeCritic(reply: 'not json'),
+      );
       final result = await service.verify(
         draft: _draft,
         originalFileContents: 'x',
@@ -97,7 +105,8 @@ void main() {
 
     test('returns null (unavailable) when the critic throws', () async {
       final service = VerificationService(
-          critic: _FakeCritic(error: Exception('azure down')));
+        critic: _FakeCritic(error: Exception('azure down')),
+      );
       final result = await service.verify(
         draft: _draft,
         originalFileContents: 'x',

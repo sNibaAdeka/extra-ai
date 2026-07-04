@@ -20,10 +20,10 @@ void main() {
       );
     });
 
-    test('rate limited message asks the user to slow down', () {
+    test('rate limited message mentions quota or credits', () {
       expect(
         ErrorMessages.forFailure(FailureType.rateLimited).toLowerCase(),
-        contains('slow down'),
+        anyOf(contains('quota'), contains('credits')),
       );
     });
   });

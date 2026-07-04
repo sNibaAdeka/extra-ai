@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:extra_ai/services/gemini_service.dart';
+import 'package:extra_ai/services/mock_prompt_model.dart';
 import 'package:extra_ai/understanding/error_messages.dart';
 
 /// Fake model that returns a canned string or throws a canned error, so the
@@ -53,11 +54,19 @@ void main() {
     });
 
     test('maps a timeout error to networkTimeout', () async {
-      final service = GeminiService(
-        model: _FakeModel(error: GeminiTimeout()),
-      );
+      final service = GeminiService(model: _FakeModel(error: GeminiTimeout()));
       final result = await service.analyze(fullPrompt: 'x');
       expect(result.failure, FailureType.networkTimeout);
+    });
+
+    test('maps depleted Gemini credits to rateLimited', () async {
+      final service = GeminiService(
+        model: _FakeModel(
+          error: ServerException('Your prepayment credits are depleted.'),
+        ),
+      );
+      final result = await service.analyze(fullPrompt: 'x');
+      expect(result.failure, FailureType.rateLimited);
     });
 
     test('maps an unexpected error to unknown', () async {
@@ -81,6 +90,57 @@ void main() {
       expect(calls, 2);
       expect(result.isSuccess, isTrue);
     });
+
+    test('mock model returns a valid local response', () async {
+      const model = MockPromptModel();
+      final service = GeminiService(model: model);
+      final result = await service.analyze(
+        fullPrompt: '''
+CURRENT REQUEST:
+PROJECT FILES:
+--- lib/app/overlay_window_app.dart ---
+code
+
+USER PROMPT:
+сделай чат меньше
+
+issues_enabled: true
+''',
+      );
+      expect(result.isSuccess, isTrue);
+      expect(result.response!.improvedPrompt, contains('@lib/app'));
+      expect(result.response!.improvedPrompt, contains('сделай чат меньше'));
+      expect(result.response!.improvedPrompt, contains('extrai.org'));
+      expect(result.response!.issues.join(' '), contains('Mock mode'));
+    });
+
+    test(
+      'mock model uses a website hero target when no files are attached',
+      () async {
+        const model = MockPromptModel();
+        final service = GeminiService(model: model);
+        final result = await service.analyze(
+          fullPrompt: '''
+CURRENT REQUEST:
+PROJECT FILES:
+
+USER PROMPT:
+мне не нравится 3д модель хочу минималистично
+
+issues_enabled: true
+''',
+        );
+        expect(result.isSuccess, isTrue);
+        expect(
+          result.response!.improvedPrompt,
+          contains('@src/components/Hero'),
+        );
+        expect(
+          result.response!.improvedPrompt,
+          isNot(contains('prompt_input')),
+        );
+      },
+    );
   });
 }
 

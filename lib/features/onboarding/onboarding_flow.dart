@@ -49,13 +49,15 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       _experience != null && _tools.isNotEmpty && _focus != null;
 
   void _finish() {
-    widget.onComplete(UserProfile(
-      experienceLevel: _experience!,
-      primaryTools: _tools.toList(),
-      projectFocus: _focus!,
-      tonePreference: _tone,
-      createdAt: DateTime.now(),
-    ));
+    widget.onComplete(
+      UserProfile(
+        experienceLevel: _experience!,
+        primaryTools: _tools.toList(),
+        projectFocus: _focus!,
+        tonePreference: _tone,
+        createdAt: DateTime.now(),
+      ),
+    );
   }
 
   @override
@@ -114,8 +116,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       children: [
         const PillTag('🛡 Your data stays local'),
         const SizedBox(height: 18),
-        Text('Welcome to Extra AI',
-            style: AppTheme.display(size: 40, weight: FontWeight.w600)),
+        Text(
+          'Welcome to Extra AI',
+          style: AppTheme.display(size: 40, weight: FontWeight.w600),
+        ),
         const SizedBox(height: 14),
         Text(
           'Extra AI looks at your screen and your code, then writes the '
@@ -135,14 +139,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
               children: [
                 const Padding(
                   padding: EdgeInsets.only(top: 3),
-                  child:
-                      Icon(Icons.check, size: 14, color: AppTheme.accent),
+                  child: Icon(Icons.check, size: 14, color: AppTheme.accent),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(bullet,
-                      style: AppTheme.ui(
-                          size: 14, color: AppTheme.textPrimary)),
+                  child: Text(
+                    bullet,
+                    style: AppTheme.ui(size: 14, color: AppTheme.textPrimary),
+                  ),
                 ),
               ],
             ),
@@ -164,8 +168,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Set your hotkey',
-            style: AppTheme.display(size: 34, weight: FontWeight.w600)),
+        Text(
+          'Set your hotkey',
+          style: AppTheme.display(size: 34, weight: FontWeight.w600),
+        ),
         const SizedBox(height: 14),
         Text(
           'This shortcut activates Extra AI from any app. Press it to open '
@@ -222,8 +228,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('A few quick questions',
-            style: AppTheme.display(size: 34, weight: FontWeight.w600)),
+        Text(
+          'A few quick questions',
+          style: AppTheme.display(size: 34, weight: FontWeight.w600),
+        ),
         const SizedBox(height: 12),
         Text(
           'This helps Extra AI match your experience level and tools.',
@@ -232,37 +240,50 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
         const SizedBox(height: 22),
         _selector(
           'Experience level',
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final e in ExperienceLevel.values)
-              SelectChip(
-                label: _experienceLabel(e),
-                selected: _experience == e,
-                onTap: () => setState(() => _experience = e),
-              ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final e in ExperienceLevel.values)
+                SelectChip(
+                  label: _experienceLabel(e),
+                  selected: _experience == e,
+                  onTap: () => setState(() => _experience = e),
+                ),
+            ],
+          ),
         ),
         _selector(
           'Primary tools',
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final t in _toolChoices)
-              SelectChip(
-                label: t,
-                selected: _tools.contains(t),
-                onTap: () => setState(
-                    () => _tools.contains(t) ? _tools.remove(t) : _tools.add(t)),
-              ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final t in _toolChoices)
+                SelectChip(
+                  label: t,
+                  selected: _tools.contains(t),
+                  onTap: () => setState(
+                    () => _tools.contains(t) ? _tools.remove(t) : _tools.add(t),
+                  ),
+                ),
+            ],
+          ),
         ),
         _selector(
           'What you build',
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            for (final f in ProjectFocus.values)
-              SelectChip(
-                label: _focusLabel(f),
-                selected: _focus == f,
-                onTap: () => setState(() => _focus = f),
-              ),
-          ]),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final f in ProjectFocus.values)
+                SelectChip(
+                  label: _focusLabel(f),
+                  selected: _focus == f,
+                  onTap: () => setState(() => _focus = f),
+                ),
+            ],
+          ),
         ),
         _selector(
           'Tone preference',
@@ -300,11 +321,14 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: AppTheme.ui(
-                  size: 13,
-                  weight: FontWeight.w600,
-                  color: AppTheme.textPrimary)),
+          Text(
+            label,
+            style: AppTheme.ui(
+              size: 13,
+              weight: FontWeight.w600,
+              color: AppTheme.textPrimary,
+            ),
+          ),
           const SizedBox(height: 8),
           child,
         ],
@@ -364,8 +388,8 @@ class _DotPagination extends StatelessWidget {
               color: i < step
                   ? AppTheme.accent.withValues(alpha: 0.55)
                   : i == step
-                      ? AppTheme.accent
-                      : Colors.transparent,
+                  ? AppTheme.accent
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(100),
               border: i > step
                   ? Border.all(color: AppTheme.textDim.withValues(alpha: 0.6))
@@ -401,26 +425,33 @@ class _FramedPreview extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Traffic lights.
-              Row(children: [
-                for (final c in const [
-                  Color(0xFFFF5F57),
-                  Color(0xFFFEBC2E),
-                  Color(0xFF28C840),
-                ])
-                  Container(
-                    width: 10,
-                    height: 10,
-                    margin: const EdgeInsets.only(right: 6),
-                    decoration:
-                        BoxDecoration(color: c, shape: BoxShape.circle),
-                  ),
-              ]),
+              Row(
+                children: [
+                  for (final c in const [
+                    Color(0xFFFF5F57),
+                    Color(0xFFFEBC2E),
+                    Color(0xFF28C840),
+                  ])
+                    Container(
+                      width: 10,
+                      height: 10,
+                      margin: const EdgeInsets.only(right: 6),
+                      decoration: BoxDecoration(
+                        color: c,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                ],
+              ),
               const SizedBox(height: 14),
-              Text('Improved Prompt',
-                  style: AppTheme.ui(
-                      size: 11,
-                      weight: FontWeight.w600,
-                      color: AppTheme.accent)),
+              Text(
+                'Improved Prompt',
+                style: AppTheme.ui(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  color: AppTheme.accent,
+                ),
+              ),
               const SizedBox(height: 8),
               for (final w in const [0.92, 0.98, 0.7])
                 Padding(
@@ -437,11 +468,14 @@ class _FramedPreview extends StatelessWidget {
                   ),
                 ),
               const SizedBox(height: 12),
-              Text('Issues Found',
-                  style: AppTheme.ui(
-                      size: 11,
-                      weight: FontWeight.w600,
-                      color: AppTheme.signalOrange)),
+              Text(
+                'Issues Found',
+                style: AppTheme.ui(
+                  size: 11,
+                  weight: FontWeight.w600,
+                  color: AppTheme.signalOrange,
+                ),
+              ),
               const SizedBox(height: 8),
               for (final w in const [0.85, 0.6])
                 Padding(
@@ -465,11 +499,14 @@ class _FramedPreview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
-                child: Text('Copy & Insert',
-                    style: AppTheme.ui(
-                        size: 11,
-                        weight: FontWeight.w600,
-                        color: AppTheme.onAccent)),
+                child: Text(
+                  'Copy & Insert',
+                  style: AppTheme.ui(
+                    size: 11,
+                    weight: FontWeight.w600,
+                    color: AppTheme.onAccent,
+                  ),
+                ),
               ),
             ],
           ),
@@ -513,13 +550,15 @@ class _FlowStepCards extends StatelessWidget {
           if (i > 0)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Icon(Icons.arrow_forward,
-                  size: 14, color: AppTheme.textDim),
+              child: Icon(
+                Icons.arrow_forward,
+                size: 14,
+                color: AppTheme.textDim,
+              ),
             ),
           Expanded(
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
+              padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 8),
               decoration: AppTheme.card(radius: 12),
               child: Column(
                 children: [
@@ -528,8 +567,7 @@ class _FlowStepCards extends StatelessWidget {
                   Text(
                     steps[i].$2,
                     textAlign: TextAlign.center,
-                    style: AppTheme.ui(
-                        size: 12, color: AppTheme.textSecondary),
+                    style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
                   ),
                 ],
               ),

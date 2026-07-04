@@ -57,7 +57,8 @@ class HiveHistoryStore implements HistoryStore {
 /// Session memory (Layer 3). Keeps the last [maxPerProject] entries per project
 /// (FIFO), and exposes the last [recentWindow] for the request context block.
 class HistoryService {
-  HistoryService({required HistoryStore store}) : _store = store; // ignore: prefer_initializing_formals
+  HistoryService({required HistoryStore store})
+    : _store = store; // ignore: prefer_initializing_formals
 
   static const int maxPerProject = 5;
   static const int recentWindow = 3;
@@ -69,12 +70,12 @@ class HistoryService {
   Future<void> add(PromptHistoryEntry entry) async {
     final all = _store.all().toList();
 
-    final sameProject = all
-        .where((e) => e.projectPathHash == entry.projectPathHash)
-        .toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
-    final others =
-        all.where((e) => e.projectPathHash != entry.projectPathHash).toList();
+    final sameProject =
+        all.where((e) => e.projectPathHash == entry.projectPathHash).toList()
+          ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final others = all
+        .where((e) => e.projectPathHash != entry.projectPathHash)
+        .toList();
 
     sameProject.add(entry);
     // Drop oldest until within cap.
@@ -111,6 +112,34 @@ class HistoryService {
 
   /// Clear everything (Settings → Data & Privacy, after confirmation).
   Future<void> clearAll() => _store.put(const []);
+
+  /// Local migration helper: old builds keyed history by String.hashCode,
+  /// which is not a stable persisted identity. When the same path is observed
+  /// again in this runtime, move matching entries to the deterministic key.
+  Future<void> rekeyProject({required String from, required String to}) async {
+    if (from == to) return;
+    final entries = _store
+        .all()
+        .map(
+          (e) => e.projectPathHash == from
+              ? PromptHistoryEntry(
+                  projectPathHash: to,
+                  roughPrompt: e.roughPrompt,
+                  improvedPrompt: e.improvedPrompt,
+                  issuesFound: e.issuesFound,
+                  timestamp: e.timestamp,
+                  qualityStatus: e.qualityStatus,
+                  qualitySummary: e.qualitySummary,
+                  auditStatus: e.auditStatus,
+                  auditSummary: e.auditSummary,
+                  auditReport: e.auditReport,
+                  trace: e.trace,
+                )
+              : e,
+        )
+        .toList();
+    await _store.put(entries);
+  }
 
   /// Clear a single project's history (settings action).
   Future<void> clear(String projectPathHash) async {

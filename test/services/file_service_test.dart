@@ -8,8 +8,10 @@ void main() {
         'config.js': 'const apiKey = "abcdefghijklmnop1234";',
       });
       expect(project.concatenatedContent, contains('[REDACTED_BY_EXTRA_AI]'));
-      expect(project.concatenatedContent,
-          isNot(contains('abcdefghijklmnop1234')));
+      expect(
+        project.concatenatedContent,
+        isNot(contains('abcdefghijklmnop1234')),
+      );
       expect(project.redactedSecretCount, greaterThanOrEqualTo(1));
     });
 
@@ -22,9 +24,7 @@ void main() {
     });
 
     test('concatenated content labels each file by name', () {
-      final project = FileService.buildFromRaw({
-        'app.js': 'console.log(1);',
-      });
+      final project = FileService.buildFromRaw({'app.js': 'console.log(1);'});
       expect(project.concatenatedContent, contains('app.js'));
       expect(project.concatenatedContent, contains('console.log(1);'));
     });
