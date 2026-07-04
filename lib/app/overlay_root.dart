@@ -35,7 +35,37 @@ class OverlayRoot extends StatelessWidget {
       builder: (context, _) {
         return Stack(
           children: [
-            Positioned.fill(child: Center(child: _window(context))),
+            Positioned.fill(
+              child: Center(
+                // Smooth cross-fade + slight rise/scale between input →
+                // loading → results, so pressing Enter doesn't snap.
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 340),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(
+                      scale: Tween<double>(begin: 0.98, end: 1.0)
+                          .animate(animation),
+                      child: child,
+                    ),
+                  ),
+                  layoutBuilder: (currentChild, previousChildren) => Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ...previousChildren,
+                      // ignore: use_null_aware_elements
+                      if (currentChild != null) currentChild,
+                    ],
+                  ),
+                  child: KeyedSubtree(
+                    key: ValueKey(state.view),
+                    child: _window(context),
+                  ),
+                ),
+              ),
+            ),
 
             // Transient error banner.
             if (state.errorMessage != null)

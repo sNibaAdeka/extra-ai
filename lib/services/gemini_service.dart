@@ -202,9 +202,14 @@ project files and current user prompt. Return corrected JSON only.
     String fullPrompt,
     List<int>? screenshotBytes,
   ) async {
+    // gemini-2.5-flash "thinks" before answering (~13-25s with context), so
+    // the budget is generous. maxAttempts:1 here because analyze() already
+    // does its own retry on a null/invalid parse — a second timeout-retry
+    // would stack to 90s.
     final raw = await ReliableApiCaller.callWithRetry(
       () => _model.generate(fullPrompt, screenshotBytes: screenshotBytes),
-      timeout: const Duration(seconds: 12),
+      timeout: const Duration(seconds: 45),
+      maxAttempts: 1,
     );
     if (raw == null) return null;
     return ResponseValidator.validateAndParse(raw);

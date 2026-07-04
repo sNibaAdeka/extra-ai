@@ -42,42 +42,67 @@ class MainWindowApp extends StatelessWidget {
         body: AnimatedBuilder(
           animation: flow,
           builder: (context, _) {
-            switch (flow.stage) {
-              case MainStage.auth:
-                return RegistrationScreen(
-                  auth: auth,
-                  onAuthenticated: flow.onAuthenticated,
-                );
-              case MainStage.linking:
-                return ProjectLinkingScreen(
-                  projects: state.projectService,
-                  onContinue: flow.onLinkingComplete,
-                );
-              case MainStage.onboarding:
-                return Padding(
-                  padding: const EdgeInsets.all(40),
-                  child: OnboardingFlow(
-                    onComplete: (profile) async {
-                      await state.completeOnboarding(profile);
-                      flow.onOnboardingComplete();
-                    },
-                    onHotkeyChanged: (combo) =>
-                        state.settings?.setHotkeyCombo(combo),
+            // Cross-fade + gentle rise between funnel stages so the flow
+            // feels continuous rather than snapping.
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 420),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0, 0.02),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
                   ),
                 );
-              case MainStage.app:
-                return AnimatedBuilder(
-                  animation: state,
-                  builder: (context, _) => AppShell(
-                    state: state,
-                    onNewAnalysis: onNewAnalysis,
-                    onBindingsChanged: onBindingsChanged,
-                  ),
-                );
-            }
+              },
+              child: KeyedSubtree(
+                key: ValueKey(flow.stage),
+                child: _stageScreen(),
+              ),
+            );
           },
         ),
       ),
     );
+  }
+
+  Widget _stageScreen() {
+    switch (flow.stage) {
+      case MainStage.auth:
+        return RegistrationScreen(
+          auth: auth,
+          onAuthenticated: flow.onAuthenticated,
+        );
+      case MainStage.linking:
+        return ProjectLinkingScreen(
+          projects: state.projectService,
+          onContinue: flow.onLinkingComplete,
+        );
+      case MainStage.onboarding:
+        return Padding(
+          padding: const EdgeInsets.all(40),
+          child: OnboardingFlow(
+            onComplete: (profile) async {
+              await state.completeOnboarding(profile);
+              flow.onOnboardingComplete();
+            },
+            onHotkeyChanged: (combo) => state.settings?.setHotkeyCombo(combo),
+          ),
+        );
+      case MainStage.app:
+        return AnimatedBuilder(
+          animation: state,
+          builder: (context, _) => AppShell(
+            state: state,
+            onNewAnalysis: onNewAnalysis,
+            onBindingsChanged: onBindingsChanged,
+          ),
+        );
+    }
   }
 }
