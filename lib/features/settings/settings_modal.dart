@@ -830,10 +830,39 @@ class _PlansTab extends StatefulWidget {
 
 class _PlansTabState extends State<_PlansTab> {
   bool _annual = false;
+  final TextEditingController _promo = TextEditingController();
+  bool _redeeming = false;
+  String? _promoError;
+
+  @override
+  void dispose() {
+    _promo.dispose();
+    super.dispose();
+  }
 
   void _selectPlan(PlanTier tier) {
     widget.state.selectPlan(tier).then((_) {
       if (mounted) setState(() {});
+    });
+  }
+
+  Future<void> _redeemPromo() async {
+    final code = _promo.text;
+    if (code.trim().isEmpty) return;
+    setState(() {
+      _redeeming = true;
+      _promoError = null;
+    });
+    final result = await widget.state.redeemPromoCode(code);
+    if (!mounted) return;
+    setState(() {
+      _redeeming = false;
+      if (result.accepted) {
+        _promo.clear();
+        _promoError = null;
+      } else {
+        _promoError = result.message ?? "That code isn't valid.";
+      }
     });
   }
 
@@ -843,6 +872,10 @@ class _PlansTabState extends State<_PlansTab> {
     return Column(
       children: [
         _BillingStatusCard(subscription: subscription),
+        if (subscription.isUnlimited) ...[
+          const SizedBox(height: 12),
+          const _AdminModeBanner(),
+        ],
         const SizedBox(height: 16),
         Center(
           child: SegmentedControl<bool>(
@@ -926,11 +959,163 @@ class _PlansTabState extends State<_PlansTab> {
             ),
           ],
         ),
+        const SizedBox(height: 18),
+        _PromoCodeField(
+          controller: _promo,
+          busy: _redeeming,
+          error: _promoError,
+          onRedeem: _redeemPromo,
+        ),
         const SizedBox(height: 12),
         Text(
-          'MVP billing uses a local adapter. The app now talks to a subscription gateway, so Stripe/Supabase can replace it without changing the UI.',
+          'Have a promo code? Redeem it above. MVP billing uses a local adapter, '
+          'so Stripe/Supabase can replace it without changing the UI.',
           style: AppTheme.ui(size: 11.5, color: AppTheme.textDim),
         ),
+      ],
+    );
+  }
+}
+
+class _AdminModeBanner extends StatelessWidget {
+  const _AdminModeBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        gradient: AppTheme.brandGradient,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.all_inclusive, size: 18, color: AppTheme.onAccent),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Admin mode active',
+                  style: AppTheme.ui(
+                    size: 13.5,
+                    weight: FontWeight.w700,
+                    color: AppTheme.onAccent,
+                  ),
+                ),
+                Text(
+                  'Unlimited analyses and projects. No monthly cap.',
+                  style: AppTheme.ui(
+                    size: 12,
+                    color: AppTheme.onAccent.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PromoCodeField extends StatelessWidget {
+  const _PromoCodeField({
+    required this.controller,
+    required this.busy,
+    required this.error,
+    required this.onRedeem,
+  });
+
+  final TextEditingController controller;
+  final bool busy;
+  final String? error;
+  final VoidCallback onRedeem;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('PROMO CODE', style: AppTheme.sectionLabel()),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: AppTheme.surfaceHigh,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: error == null
+                        ? AppTheme.borderSubtle
+                        : AppTheme.signalRed,
+                  ),
+                ),
+                alignment: Alignment.centerLeft,
+                child: TextField(
+                  controller: controller,
+                  onSubmitted: (_) => onRedeem(),
+                  textCapitalization: TextCapitalization.characters,
+                  style: AppTheme.mono(size: 13, color: AppTheme.textPrimary),
+                  cursorColor: AppTheme.accent,
+                  decoration: InputDecoration(
+                    isDense: true,
+                    border: InputBorder.none,
+                    hintText: 'Enter code',
+                    hintStyle: AppTheme.mono(size: 13, color: AppTheme.textDim),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            PressableScale(
+              onTap: busy ? () {} : onRedeem,
+              child: Opacity(
+                opacity: busy ? 0.6 : 1,
+                child: Container(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.brandGradient,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: busy
+                      ? const SizedBox(
+                          width: 15,
+                          height: 15,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation(
+                              AppTheme.onAccent,
+                            ),
+                          ),
+                        )
+                      : Text(
+                          'Redeem',
+                          style: AppTheme.ui(
+                            size: 13,
+                            weight: FontWeight.w700,
+                            color: AppTheme.onAccent,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            error!,
+            style: AppTheme.ui(size: 12, color: AppTheme.signalRed),
+          ),
+        ],
       ],
     );
   }
@@ -1310,34 +1495,38 @@ class _HealthStatusPill extends StatelessWidget {
       ProductHealthSeverity.warning => Icons.warning_amber_rounded,
       ProductHealthSeverity.critical => Icons.error_outline_rounded,
     };
-    return Tooltip(
-      message: '${item.title}\n${item.detail}',
-      child: Container(
-        constraints: const BoxConstraints(maxWidth: 215),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: color.withValues(alpha: 0.22)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 13, color: color),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                item.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: AppTheme.ui(
-                  size: 11.5,
-                  weight: FontWeight.w600,
-                  color: item.needsAttention ? color : AppTheme.textSecondary,
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: Tooltip(
+        key: ValueKey('${item.title}-${item.severity.name}'),
+        message: '${item.title}\n${item.detail}',
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 215),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: color.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 13, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.ui(
+                    size: 11.5,
+                    weight: FontWeight.w600,
+                    color: item.needsAttention ? color : AppTheme.textSecondary,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -1345,7 +1534,7 @@ class _HealthStatusPill extends StatelessWidget {
 }
 
 Color _healthColor(ProductHealthSeverity severity) => switch (severity) {
-  ProductHealthSeverity.ok => AppTheme.accent,
+  ProductHealthSeverity.ok => AppTheme.success,
   ProductHealthSeverity.info => AppTheme.textSecondary,
   ProductHealthSeverity.warning => AppTheme.signalOrange,
   ProductHealthSeverity.critical => AppTheme.signalRed,

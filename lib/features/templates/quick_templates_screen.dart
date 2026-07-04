@@ -67,7 +67,13 @@ class _QuickTemplatesScreenState extends State<QuickTemplatesScreen> {
               for (final t in kQuickTemplates)
                 SelectChip(
                   label: t.label,
-                  leading: Text(t.icon, style: const TextStyle(fontSize: 13)),
+                  leading: Icon(
+                    t.icon,
+                    size: 14,
+                    color: _capturing?.id == t.id
+                        ? AppTheme.onAccent
+                        : AppTheme.textSecondary,
+                  ),
                   selected: _capturing?.id == t.id,
                   onTap: () => setState(() => _capturing = t),
                 ),
@@ -168,7 +174,7 @@ class _BindingRow extends StatelessWidget {
         children: [
           KeycapBadge.combo(combo, size: KeycapSize.small),
           const SizedBox(width: 12),
-          Text(template.icon, style: const TextStyle(fontSize: 13)),
+          Icon(template.icon, size: 15, color: AppTheme.textSecondary),
           const SizedBox(width: 6),
           Text(template.label, style: AppTheme.ui(size: 13)),
           const Spacer(),

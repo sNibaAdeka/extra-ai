@@ -15,18 +15,21 @@ class AppTheme {
   // ---------------------------------------------------------------------------
   // Color tokens — exact values from the landing page CSS custom properties.
   // ---------------------------------------------------------------------------
-  static const Color bgVoid = Color(0xFF170D12); // --bg-void
-  static const Color bgMid = Color(0xFF3D2015); // --bg-mid
-  static const Color surface = Color(0xFF201017);
-  static const Color surfaceHigh = Color(0xFF2B161E);
-  static const Color borderSubtle = Color(0x14F5E4CC); // cream @ 8%
-  static const Color borderFocus = Color(0x99FF6B35);
+  static const Color bgVoid = Color(0xFF211611); // lighter warm dark
+  static const Color bgMid = Color(0xFF3A241A);
+  static const Color surface = Color(0xFF1C1712);
+  static const Color surfaceHigh = Color(0xFF2A2018);
+  static const Color borderSubtle = Color(0x1FF5E4CC); // cream @ 12%
+  static const Color borderFocus = Color(0x99F46F3D);
 
   /// --signal-ember: CTAs, active states, selected chips, live indicators.
-  static const Color accent = Color(0xFFFF6B35);
+  static const Color accent = Color(0xFFF46F3D);
+
+  /// Softer ember used for broad surfaces so the UI does not feel neon.
+  static const Color accentSoft = Color(0xFFE06439);
 
   /// Deeper terracotta companion for gradients and pressed states.
-  static const Color accentDeep = Color(0xFFD94F1E);
+  static const Color accentDeep = Color(0xFFC85632);
 
   /// Text/icon color placed ON ember fills (dark warm, ~7:1 contrast).
   static const Color onAccent = Color(0xFF1B0E07);
@@ -48,7 +51,7 @@ class AppTheme {
 
   /// Brand gradient — logo mark, primary CTAs. Left → right.
   static const Gradient brandGradient = LinearGradient(
-    colors: [accent, accentDeep],
+    colors: [accentSoft, accentDeep],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );

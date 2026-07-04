@@ -87,6 +87,13 @@ class HomeDashboard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
+        if (subscription.remainingAnalyses == 0) ...[
+          _UsageLimitBanner(
+            planLabel: subscription.tier.label,
+            onUpgrade: () => state.openSettings(SettingsTab.plans),
+          ),
+          const SizedBox(height: 12),
+        ],
         _ProductHealthStrip(report: state.productHealthReport),
         const SizedBox(height: 12),
         _ProjectCommandCenter(state: state, onOpenEntry: onOpenEntry),
@@ -97,7 +104,17 @@ class HomeDashboard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: 6, child: _WeekCard(counts: counts)),
+              Expanded(
+                flex: 6,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(child: _WeekCard(counts: counts)),
+                    const SizedBox(height: 12),
+                    const SizedBox(height: 88, child: _SpotlightCarousel()),
+                  ],
+                ),
+              ),
               const SizedBox(width: 16),
               Expanded(
                 flex: 4,
@@ -146,6 +163,94 @@ class HomeDashboard extends StatelessWidget {
   }
 }
 
+class _UsageLimitBanner extends StatelessWidget {
+  const _UsageLimitBanner({required this.planLabel, required this.onUpgrade});
+
+  final String planLabel;
+  final VoidCallback onUpgrade;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.accentSoft.withValues(alpha: 0.18),
+            AppTheme.surfaceHigh.withValues(alpha: 0.72),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.accentSoft.withValues(alpha: 0.32)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.accentSoft.withValues(alpha: 0.16),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: AppTheme.accentSoft.withValues(alpha: 0.34),
+              ),
+            ),
+            child: const Icon(
+              Icons.workspace_premium_outlined,
+              size: 18,
+              color: AppTheme.accent,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  "You've used this month's $planLabel analyses",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.ui(size: 13.5, weight: FontWeight.w800),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Upgrade to keep generating prompts without waiting for the next reset.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          PressableScale(
+            onTap: onUpgrade,
+            child: Container(
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                gradient: AppTheme.brandGradient,
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Text(
+                'Upgrade',
+                style: AppTheme.ui(
+                  size: 12.5,
+                  weight: FontWeight.w800,
+                  color: AppTheme.onAccent,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProductHealthStrip extends StatelessWidget {
   const _ProductHealthStrip({required this.report});
 
@@ -157,7 +262,7 @@ class _ProductHealthStrip extends StatelessWidget {
     // fine it reassures without shouting; when something is degraded it says so
     // in plain language — never raw error codes or internal service names.
     final ok = report.allClear;
-    final color = ok ? AppTheme.accent : AppTheme.signalOrange;
+    final color = ok ? AppTheme.success : AppTheme.signalOrange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
@@ -219,12 +324,16 @@ class _ProjectCommandCenter extends StatelessWidget {
         ? null
         : _latestFor(entries, selectedProject.pathHash);
     final sync = state.backendSyncState;
+    final otherProjects = selectedProject == null
+        ? projects
+        : projects
+              .where((project) => project.pathHash != selectedProject.pathHash)
+              .toList();
 
-    return Container(
-      // A touch taller than the content needs, so a few pixels of variance
-      // (fonts, longer text) never clip into an overflow stripe. Uses Expanded
-      // children below, so this stays a fixed height.
-      height: 160,
+    return AnimatedContainer(
+      duration: AppTheme.transitionMs,
+      curve: AppTheme.easeOut,
+      height: 218,
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       decoration: AppTheme.card(radius: 12),
       child: Column(
@@ -283,41 +392,63 @@ class _ProjectCommandCenter extends StatelessWidget {
           Expanded(
             child: projects.isEmpty
                 ? const _EmptyProjectCommand()
-                : Row(
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      SizedBox(
-                        width: 280,
-                        child: _SelectedProjectMap(
-                          project: selectedProject!,
-                          summary: state.projectIntelligence?.summary,
-                          latest: latestSelected,
-                          onOpenLatest: latestSelected == null
-                              ? null
-                              : () => onOpenEntry(latestSelected),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: projects.length,
-                          separatorBuilder: (_, _) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final project = projects[index];
-                            final latest = _latestFor(
-                              entries,
-                              project.pathHash,
-                            );
-                            return _ProjectCard(
-                              project: project,
-                              latest: latest,
-                              selected: project.pathHash == selectedHash,
-                              onTap: () => unawaited(
-                                state.selectProject(project.pathHash),
+                        child: AnimatedSwitcher(
+                          duration: AppTheme.transitionMs,
+                          switchInCurve: AppTheme.easeOut,
+                          switchOutCurve: AppTheme.easeOut,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: const Offset(0.02, 0),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
                               ),
                             );
                           },
+                          child: _SelectedProjectMap(
+                            key: ValueKey(selectedProject!.pathHash),
+                            project: selectedProject,
+                            summary: state.projectIntelligence?.summary,
+                            latest: latestSelected,
+                            onOpenLatest: latestSelected == null
+                                ? null
+                                : () => onOpenEntry(latestSelected),
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 42,
+                        child: otherProjects.isEmpty
+                            ? _SingleProjectStrip(project: selectedProject)
+                            : ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: otherProjects.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (context, index) {
+                                  final project = otherProjects[index];
+                                  final latest = _latestFor(
+                                    entries,
+                                    project.pathHash,
+                                  );
+                                  return _ProjectCard(
+                                    project: project,
+                                    latest: latest,
+                                    selected: project.pathHash == selectedHash,
+                                    onTap: () => unawaited(
+                                      state.selectProject(project.pathHash),
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ],
                   ),
@@ -335,6 +466,25 @@ class _ProjectCommandCenter extends StatelessWidget {
         entries.where((e) => e.projectPathHash == projectHash).toList()
           ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return filtered.isEmpty ? null : filtered.first;
+  }
+}
+
+class _SingleProjectStrip extends StatelessWidget {
+  const _SingleProjectStrip({required this.project});
+
+  final ProjectContext project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        'Only linked project · ${project.projectPath}',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTheme.ui(size: 11, color: AppTheme.textDim),
+      ),
+    );
   }
 }
 
@@ -417,6 +567,7 @@ class _EmptyProjectCommand extends StatelessWidget {
 
 class _SelectedProjectMap extends StatelessWidget {
   const _SelectedProjectMap({
+    super.key,
     required this.project,
     required this.summary,
     required this.latest,
@@ -431,29 +582,46 @@ class _SelectedProjectMap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.bgVoid.withValues(alpha: 0.28),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.borderSubtle),
+        gradient: LinearGradient(
+          colors: [
+            AppTheme.accentSoft.withValues(alpha: 0.13),
+            AppTheme.bgVoid.withValues(alpha: 0.32),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.accent.withValues(alpha: 0.22)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.map_outlined,
-                size: 15,
-                color: AppTheme.signalOrange,
+              Container(
+                width: 30,
+                height: 30,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: AppTheme.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(
+                    color: AppTheme.accent.withValues(alpha: 0.25),
+                  ),
+                ),
+                child: const Icon(
+                  Icons.folder_open_rounded,
+                  size: 17,
+                  color: AppTheme.accent,
+                ),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 10),
               Expanded(
                 child: Text(
                   project.displayName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTheme.ui(size: 12.5, weight: FontWeight.w800),
+                  style: AppTheme.display(size: 19, weight: FontWeight.w700),
                 ),
               ),
               if (latest != null) _QualityMiniChip(entry: latest!),
@@ -463,10 +631,10 @@ class _SelectedProjectMap extends StatelessWidget {
           Text(
             summary ??
                 '${project.detectedStack} · ${project.fileNames.length} files remembered',
-            maxLines: 2,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTheme.ui(
-              size: 11,
+              size: 12,
               height: 1.25,
               color: AppTheme.textSecondary,
             ),
@@ -474,16 +642,22 @@ class _SelectedProjectMap extends StatelessWidget {
           const Spacer(),
           Row(
             children: [
-              Icon(Icons.history_rounded, size: 13, color: AppTheme.textDim),
-              const SizedBox(width: 5),
+              _ActiveProjectMetric(
+                icon: Icons.code_rounded,
+                label: project.detectedStack,
+              ),
+              const SizedBox(width: 8),
+              _ActiveProjectMetric(
+                icon: Icons.description_outlined,
+                label: '${project.fileNames.length} files',
+              ),
+              const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  latest == null
+                child: _ActiveProjectMetric(
+                  icon: Icons.history_rounded,
+                  label: latest == null
                       ? 'No analyses yet'
-                      : 'Last: ${relativeTime(latest!.timestamp)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.ui(size: 10.5, color: AppTheme.textDim),
+                      : 'Last ${relativeTime(latest!.timestamp)}',
                 ),
               ),
               if (onOpenLatest != null)
@@ -499,6 +673,41 @@ class _SelectedProjectMap extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ActiveProjectMetric extends StatelessWidget {
+  const _ActiveProjectMetric({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceHigh.withValues(alpha: 0.55),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppTheme.textDim),
+          const SizedBox(width: 5),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.ui(size: 10.5, color: AppTheme.textSecondary),
+            ),
           ),
         ],
       ),
@@ -527,8 +736,8 @@ class _ProjectCard extends StatelessWidget {
         onTap: onTap,
         child: AnimatedContainer(
           duration: AppTheme.microMs,
-          width: 206,
-          padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+          width: 150,
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: selected
                 ? AppTheme.accent.withValues(alpha: 0.11)
@@ -543,69 +752,29 @@ class _ProjectCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(
-                selected ? Icons.folder_open_rounded : Icons.folder_outlined,
-                size: 18,
-                color: selected ? AppTheme.accent : AppTheme.textDim,
-              ),
-              const SizedBox(width: 8),
+              Icon(Icons.folder_outlined, size: 15, color: AppTheme.textDim),
+              const SizedBox(width: 7),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            project.displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTheme.ui(
-                              size: 12,
-                              weight: FontWeight.w700,
-                              color: AppTheme.textPrimary,
-                            ),
-                          ),
-                        ),
-                        if (latest != null) _QualityMiniChip(entry: latest!),
-                      ],
-                    ),
-                    const SizedBox(height: 3),
                     Text(
-                      project.detectedStack,
+                      project.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTheme.ui(
+                        size: 11.5,
+                        weight: FontWeight.w700,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      latest == null
+                          ? project.detectedStack
+                          : relativeTime(latest!.timestamp),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTheme.ui(size: 10.5, color: AppTheme.textDim),
-                    ),
-                    const Spacer(),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.auto_awesome_outlined,
-                          size: 12,
-                          color: AppTheme.textDim,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            latest == null
-                                ? '${project.totalAnalysesCount} analyses'
-                                : relativeTime(latest!.timestamp),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTheme.ui(
-                              size: 10.5,
-                              color: AppTheme.textDim,
-                            ),
-                          ),
-                        ),
-                        if (selected)
-                          const Icon(
-                            Icons.check_circle_rounded,
-                            size: 13,
-                            color: AppTheme.accent,
-                          ),
-                      ],
                     ),
                   ],
                 ),
@@ -730,15 +899,24 @@ class _WeekCard extends StatelessWidget {
                         Expanded(
                           child: Align(
                             alignment: Alignment.bottomCenter,
-                            child: FractionallySizedBox(
-                              heightFactor:
-                                  (0.08 + 0.92 * (counts[i] / maxCount))
-                                      .clamp(0.06, 1.0),
-                              child: AnimatedContainer(
-                                duration: AppTheme.transitionMs,
+                            child: TweenAnimationBuilder<double>(
+                              tween: Tween(
+                                begin: 0,
+                                end: (0.08 + 0.92 * (counts[i] / maxCount))
+                                    .clamp(0.06, 1.0),
+                              ),
+                              duration: Duration(milliseconds: 190 + i * 30),
+                              curve: AppTheme.easeOut,
+                              builder: (context, value, child) {
+                                return FractionallySizedBox(
+                                  heightFactor: value,
+                                  child: child,
+                                );
+                              },
+                              child: Container(
                                 decoration: BoxDecoration(
                                   color: counts[i] > 0
-                                      ? AppTheme.accent
+                                      ? AppTheme.accentSoft
                                       : AppTheme.textDim.withValues(alpha: 0.2),
                                   borderRadius: BorderRadius.circular(4),
                                 ),
@@ -766,8 +944,6 @@ class _WeekCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(height: 18),
-          const _SpotlightCarousel(),
         ],
       ),
     );
@@ -809,80 +985,87 @@ class _SpotlightCarouselState extends State<_SpotlightCarousel> {
   @override
   Widget build(BuildContext context) {
     final tip = _tips[_index % _tips.length];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              '✦ SPOTLIGHT',
-              style: AppTheme.sectionLabel().copyWith(color: AppTheme.accent),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: AppTheme.card(radius: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppTheme.accent.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
             ),
-            const Spacer(),
-            Row(
-              children: [
-                for (var i = 0; i < _tips.length; i++)
-                  Container(
-                    width: i == _index ? 14 : 5,
-                    height: 5,
-                    margin: const EdgeInsets.only(right: 4),
-                    decoration: BoxDecoration(
-                      color: i == _index
-                          ? AppTheme.accent
-                          : AppTheme.textDim.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(100),
+            child: const Icon(
+              Icons.tips_and_updates_outlined,
+              size: 18,
+              color: AppTheme.accent,
+            ),
+          ),
+          const SizedBox(width: 11),
+          Expanded(
+            child: AnimatedSwitcher(
+              duration: AppTheme.transitionMs,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.08),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: Column(
+                key: ValueKey(_index),
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    tip.$1,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.ui(size: 13, weight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    tip.$2,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTheme.ui(
+                      size: 11.5,
+                      color: AppTheme.textSecondary,
                     ),
                   ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(width: 6),
-            _arrow(Icons.chevron_left, () => _go(_tips.length - 1)),
-            _arrow(Icons.chevron_right, () => _go(1)),
-          ],
-        ),
-        const SizedBox(height: 10),
-        AnimatedSwitcher(
-          duration: AppTheme.transitionMs,
-          child: Column(
-            key: ValueKey(_index),
-            crossAxisAlignment: CrossAxisAlignment.start,
+          ),
+          const SizedBox(width: 8),
+          Row(
             children: [
-              Text(
-                tip.$1,
-                style: AppTheme.display(size: 17, weight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                tip.$2,
-                style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
-              ),
-              if (tip.$3 != null) ...[
-                const SizedBox(height: 8),
-                PressableScale(
-                  onTap: () {}, // decorative for MVP — must render
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.borderSubtle),
-                    ),
-                    child: Text(
-                      tip.$3!,
-                      style: AppTheme.ui(
-                        size: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
+              for (var i = 0; i < _tips.length; i++)
+                Container(
+                  width: i == _index ? 14 : 5,
+                  height: 5,
+                  margin: const EdgeInsets.only(right: 4),
+                  decoration: BoxDecoration(
+                    color: i == _index
+                        ? AppTheme.accent
+                        : AppTheme.textDim.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                 ),
-              ],
             ],
           ),
-        ),
-      ],
+          const SizedBox(width: 4),
+          _arrow(Icons.chevron_left, () => _go(_tips.length - 1)),
+          _arrow(Icons.chevron_right, () => _go(1)),
+        ],
+      ),
     );
   }
 
@@ -964,12 +1147,40 @@ class _RecentCard extends StatelessWidget {
                     itemCount: entries.length,
                     separatorBuilder: (_, _) =>
                         const Divider(height: 14, color: AppTheme.borderSubtle),
-                    itemBuilder: (context, i) =>
-                        _RecentRow(entry: entries[i], onTap: onOpenEntry),
+                    itemBuilder: (context, i) => _StaggeredListItem(
+                      index: i,
+                      child: _RecentRow(entry: entries[i], onTap: onOpenEntry),
+                    ),
                   ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _StaggeredListItem extends StatelessWidget {
+  const _StaggeredListItem({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 170 + index * 40),
+      curve: AppTheme.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 4 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
     );
   }
 }

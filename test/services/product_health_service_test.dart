@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:extra_ai/models/backend_sync_state.dart';
 import 'package:extra_ai/models/product_health_report.dart';
 import 'package:extra_ai/models/project_context.dart';
-import 'package:extra_ai/models/subscription_state.dart';
 import 'package:extra_ai/models/sync_outbox_event.dart';
 import 'package:extra_ai/services/health_check_service.dart';
 import 'package:extra_ai/services/product_health_service.dart';
@@ -34,10 +33,6 @@ void main() {
       ),
       backendSync: _sync(),
       syncOutbox: const SyncOutboxSummary(pending: 0, flushed: 1, failed: 0),
-      subscription: const SubscriptionState(
-        tier: PlanTier.pro,
-        usageThisMonth: 2,
-      ),
       linkedProjects: [project],
       selectedProject: project,
       loadedFileCount: 4,
@@ -54,14 +49,15 @@ void main() {
       report.items.map((item) => item.title),
       contains('Privacy guard active'),
     );
-    // The cloud-sync line is intentionally omitted (no live backend yet).
+    // Product/project/usage/sync lines are intentionally omitted from
+    // technical health. They live in the dashboard context where they belong.
     expect(
       report.items.map((item) => item.area),
       isNot(contains(ProductHealthArea.sync)),
     );
   });
 
-  test('blocks analysis when Gemini is degraded or usage is exhausted', () {
+  test('blocks analysis only for real technical failures', () {
     final project = _project();
     final report = ProductHealthService.build(
       appHealth: const AppHealth(
@@ -70,10 +66,6 @@ void main() {
       ),
       backendSync: _sync(),
       syncOutbox: const SyncOutboxSummary(pending: 0, flushed: 0, failed: 0),
-      subscription: const SubscriptionState(
-        tier: PlanTier.free,
-        usageThisMonth: 5,
-      ),
       linkedProjects: [project],
       selectedProject: project,
       loadedFileCount: 1,
@@ -82,11 +74,11 @@ void main() {
 
     expect(report.readyForAnalysis, isFalse);
     expect(report.severity, ProductHealthSeverity.critical);
-    expect(report.criticalCount, 2);
+    expect(report.criticalCount, 1);
     expect(report.summary, contains('blocking'));
   });
 
-  test('surfaces missing project as an attention item', () {
+  test('does not treat missing project or sync queue as technical health', () {
     final report = ProductHealthService.build(
       appHealth: const AppHealth(
         generator: ServiceStatus.healthy,
@@ -94,25 +86,20 @@ void main() {
       ),
       backendSync: _sync(BackendSyncMode.cloudConnected),
       syncOutbox: const SyncOutboxSummary(pending: 0, flushed: 1, failed: 2),
-      subscription: const SubscriptionState(
-        tier: PlanTier.studio,
-        usageThisMonth: 10,
-      ),
       linkedProjects: const [],
       selectedProject: null,
       loadedFileCount: 0,
       redactedSecretCount: 0,
     );
 
-    // Sync failures no longer surface (line removed); only the missing
-    // project needs attention.
-    expect(report.severity, ProductHealthSeverity.warning);
-    expect(report.warningCount, 1);
+    expect(report.severity, ProductHealthSeverity.ok);
+    expect(report.warningCount, 0);
+    expect(report.readyForAnalysis, isTrue);
     expect(
       report.attentionItems.map((item) => item.title),
-      contains('No projects linked'),
+      isNot(contains('No projects linked')),
     );
-    expect(report.allClear, isFalse);
-    expect(report.dashboardLine, contains('No project linked'));
+    expect(report.allClear, isTrue);
+    expect(report.dashboardLine, contains('smoothly'));
   });
 }

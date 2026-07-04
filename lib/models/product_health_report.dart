@@ -1,6 +1,6 @@
 enum ProductHealthSeverity { ok, info, warning, critical }
 
-enum ProductHealthArea { ai, project, sync, privacy, usage }
+enum ProductHealthArea { ai, sync, privacy }
 
 class ProductHealthItem {
   const ProductHealthItem({
@@ -57,7 +57,7 @@ class ProductHealthReport {
   String get label => switch (severity) {
     ProductHealthSeverity.ok => 'Ready',
     ProductHealthSeverity.info => 'Ready with notes',
-    ProductHealthSeverity.warning => 'Needs attention',
+    ProductHealthSeverity.warning => 'Limited',
     ProductHealthSeverity.critical => 'Blocked',
   };
 
@@ -92,10 +92,6 @@ class ProductHealthReport {
     switch (worst.area) {
       case ProductHealthArea.ai:
         return 'AI analysis is temporarily unavailable — check your connection';
-      case ProductHealthArea.project:
-        return 'No project linked yet — link one to get grounded results';
-      case ProductHealthArea.usage:
-        return "You've used this month's free analyses";
       case ProductHealthArea.privacy:
       case ProductHealthArea.sync:
         return 'Quality checks are temporarily limited — analysis still works';

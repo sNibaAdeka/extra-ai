@@ -103,32 +103,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         const SizedBox(height: 6),
         Row(
           children: [
-            Text(
-              '💬 ${widget.entries.length} total',
-              style: AppTheme.ui(size: 12, color: AppTheme.textDim),
+            _metric(
+              Icons.chat_bubble_outline_rounded,
+              '${widget.entries.length} total',
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '·',
-                style: AppTheme.ui(size: 12, color: AppTheme.textDim),
-              ),
-            ),
-            Text(
-              '📅 $todayCount today',
-              style: AppTheme.ui(size: 12, color: AppTheme.textDim),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(
-                '·',
-                style: AppTheme.ui(size: 12, color: AppTheme.textDim),
-              ),
-            ),
-            Text(
-              '⭐ $favCount favorites',
-              style: AppTheme.ui(size: 12, color: AppTheme.textDim),
-            ),
+            _metricDivider(),
+            _metric(Icons.calendar_today_outlined, '$todayCount today'),
+            _metricDivider(),
+            _metric(Icons.star_border_rounded, '$favCount favorites'),
           ],
         ),
         const SizedBox(height: 16),
@@ -210,14 +192,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
               : ListView.separated(
                   itemCount: visible.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _HistoryCard(
-                    entry: visible[i],
-                    favorite: widget.favorites.isFavorite(visible[i]),
-                    onToggleFavorite: () async {
-                      await widget.favorites.toggle(visible[i]);
-                      setState(() {});
-                    },
-                    onOpen: () => widget.onOpenEntry(visible[i]),
+                  itemBuilder: (context, i) => _StaggeredHistoryItem(
+                    index: i,
+                    child: _HistoryCard(
+                      entry: visible[i],
+                      favorite: widget.favorites.isFavorite(visible[i]),
+                      onToggleFavorite: () async {
+                        await widget.favorites.toggle(visible[i]);
+                        setState(() {});
+                      },
+                      onOpen: () => widget.onOpenEntry(visible[i]),
+                    ),
                   ),
                 ),
         ),
@@ -230,6 +215,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
     selected: _filter == f,
     onTap: () => setState(() => _filter = f),
   );
+
+  Widget _metric(IconData icon, String label) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Icon(icon, size: 13, color: AppTheme.textDim),
+      const SizedBox(width: 5),
+      Text(label, style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
+    ],
+  );
+
+  Widget _metricDivider() => Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 8),
+    child: Text('·', style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
+  );
+}
+
+class _StaggeredHistoryItem extends StatelessWidget {
+  const _StaggeredHistoryItem({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: Duration(milliseconds: 170 + index * 40),
+      curve: AppTheme.easeOut,
+      builder: (context, value, child) {
+        return Opacity(
+          opacity: value,
+          child: Transform.translate(
+            offset: Offset(0, 4 * (1 - value)),
+            child: child,
+          ),
+        );
+      },
+      child: child,
+    );
+  }
 }
 
 class _HistoryCard extends StatelessWidget {

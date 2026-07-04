@@ -33,5 +33,27 @@ void main() {
       expect(state.tier, PlanTier.pro);
       expect(state.remainingAnalyses, 193);
     });
+
+    test('AD2011AD promo unlocks unlimited admin mode', () async {
+      final service = InMemorySubscriptionService();
+
+      final result = await service.redeemPromoCode('  ad2011ad ');
+      expect(result.accepted, isTrue);
+      expect(result.tier, PlanTier.admin);
+
+      final state = service.current(usageThisMonth: 5000);
+      expect(state.tier, PlanTier.admin);
+      expect(state.isUnlimited, isTrue);
+      expect(state.usageRatio, 0);
+      expect(state.headline, contains('unlimited'));
+    });
+
+    test('unknown promo code is rejected and leaves tier unchanged', () async {
+      final service = InMemorySubscriptionService(PlanTier.pro);
+
+      final result = await service.redeemPromoCode('NOPE');
+      expect(result.accepted, isFalse);
+      expect(service.current(usageThisMonth: 1).tier, PlanTier.pro);
+    });
   });
 }

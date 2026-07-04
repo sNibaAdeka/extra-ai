@@ -1,7 +1,9 @@
 enum PlanTier {
   free('Free', 5, 1, false),
   pro('Pro', 200, 1, true),
-  studio('Studio', 500, 5, true);
+  studio('Studio', 500, 5, true),
+  // Unlocked only via the AD2011AD promo code. Unlimited everything.
+  admin('Admin', 1 << 30, 1 << 30, true);
 
   const PlanTier(
     this.label,
@@ -14,6 +16,9 @@ enum PlanTier {
   final int monthlyAnalysisLimit;
   final int projectLimit;
   final bool securityIncluded;
+
+  /// True for tiers with no practical usage ceiling (admin mode).
+  bool get isUnlimited => this == PlanTier.admin;
 
   static PlanTier fromId(String id) => PlanTier.values.firstWhere(
     (tier) => tier.name == id,
@@ -34,6 +39,8 @@ class SubscriptionState {
 
   int get monthlyLimit => tier.monthlyAnalysisLimit;
 
+  bool get isUnlimited => tier.isUnlimited;
+
   int get remainingAnalyses {
     final remaining = monthlyLimit - usageThisMonth;
     if (remaining < 0) return 0;
@@ -42,6 +49,7 @@ class SubscriptionState {
   }
 
   double get usageRatio {
+    if (isUnlimited) return 0;
     if (monthlyLimit <= 0) return 0;
     final ratio = usageThisMonth / monthlyLimit;
     if (ratio < 0) return 0;
@@ -51,6 +59,7 @@ class SubscriptionState {
 
   bool get isLimited => tier == PlanTier.free;
 
-  String get headline =>
-      '${tier.label} · $usageThisMonth/$monthlyLimit analyses this month';
+  String get headline => isUnlimited
+      ? 'Admin · unlimited analyses'
+      : '${tier.label} · $usageThisMonth/$monthlyLimit analyses this month';
 }

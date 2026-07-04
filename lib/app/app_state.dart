@@ -171,6 +171,24 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Redeems a promo code (e.g. AD2011AD for unlimited admin mode). Returns the
+  /// redemption result so the UI can show success/failure inline.
+  Future<PromoRedemption> redeemPromoCode(String code) async {
+    final gateway = _subscription;
+    if (gateway == null) return PromoRedemption.invalid;
+    final result = await gateway.redeemPromoCode(code);
+    if (result.accepted && result.tier != null) {
+      await _enqueueSyncEvent(SyncEventType.planChanged, {
+        'tier': result.tier!.name,
+        'usageThisMonth': _profiles.usageThisMonth,
+        'promo': PromoCodes.normalize(code),
+      });
+      await refreshBackendSync();
+    }
+    notifyListeners();
+    return result;
+  }
+
   Future<void> _enqueueSyncEvent(
     SyncEventType type,
     Map<String, dynamic> payload,
@@ -410,7 +428,6 @@ class AppState extends ChangeNotifier {
     appHealth: _health,
     backendSync: _backendSyncState,
     syncOutbox: syncOutboxSummary,
-    subscription: subscriptionState,
     linkedProjects: linkedProjects,
     selectedProject: selectedProject,
     loadedFileCount: fileCount,

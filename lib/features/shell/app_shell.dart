@@ -35,12 +35,16 @@ class AppShell extends StatefulWidget {
 class _AppShellState extends State<AppShell> {
   bool _notificationsOpen = false;
   PromptHistoryEntry? _detailEntry;
+  int _lastSectionIndex = 0;
 
   AppState get state => widget.state;
 
   @override
   Widget build(BuildContext context) {
     final entries = state.allHistory();
+    final sectionIndex = _sectionIndex(state.shellSection);
+    final sectionDirection = sectionIndex >= _lastSectionIndex ? 1.0 : -1.0;
+    _lastSectionIndex = sectionIndex;
 
     // Fills its parent — the shell now lives in the normal main window
     // (Window 1), so it expands to the window size rather than a fixed panel.
@@ -60,7 +64,27 @@ class _AppShellState extends State<AppShell> {
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
-                        child: _sectionBody(),
+                        child: AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 200),
+                          switchInCurve: AppTheme.easeOut,
+                          switchOutCurve: AppTheme.easeOut,
+                          transitionBuilder: (child, animation) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: SlideTransition(
+                                position: Tween<Offset>(
+                                  begin: Offset(0.012 * sectionDirection, 0),
+                                  end: Offset.zero,
+                                ).animate(animation),
+                                child: child,
+                              ),
+                            );
+                          },
+                          child: KeyedSubtree(
+                            key: ValueKey(state.shellSection),
+                            child: _sectionBody(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -159,17 +183,38 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
+  int _sectionIndex(ShellSection section) => switch (section) {
+    ShellSection.home => 0,
+    ShellSection.history => 1,
+    ShellSection.templates => 2,
+  };
+
   Widget _modalBarrier({required VoidCallback onClose, required Widget child}) {
     return Positioned.fill(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onClose,
-        child: Container(
-          color: Colors.black.withValues(alpha: 0.45),
-          alignment: Alignment.center,
-          // Swallow taps on the modal itself.
-          child: GestureDetector(onTap: () {}, child: child),
-        ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: const Duration(milliseconds: 200),
+        curve: AppTheme.easeOut,
+        builder: (context, value, _) {
+          return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onClose,
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.45 * value),
+              alignment: Alignment.center,
+              child: GestureDetector(
+                onTap: () {},
+                child: Opacity(
+                  opacity: value,
+                  child: Transform.scale(
+                    scale: 0.96 + 0.04 * value,
+                    child: child,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -220,18 +265,26 @@ class _AppShellState extends State<AppShell> {
                     Positioned(
                       top: -2,
                       right: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Text(
-                          '${state.notifications!.all.length}',
-                          style: AppTheme.ui(
-                            size: 8,
-                            weight: FontWeight.w700,
-                            color: AppTheme.onAccent,
+                      child: TweenAnimationBuilder<double>(
+                        key: ValueKey(state.notifications!.all.length),
+                        tween: Tween(begin: 1.15, end: 1),
+                        duration: const Duration(milliseconds: 300),
+                        curve: AppTheme.easeOut,
+                        builder: (context, scale, child) =>
+                            Transform.scale(scale: scale, child: child),
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: AppTheme.accent,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '${state.notifications!.all.length}',
+                            style: AppTheme.ui(
+                              size: 8,
+                              weight: FontWeight.w700,
+                              color: AppTheme.onAccent,
+                            ),
                           ),
                         ),
                       ),

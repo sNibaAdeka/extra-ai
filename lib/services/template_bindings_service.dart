@@ -1,5 +1,6 @@
 // PRIVACY NOTE: template bindings are stored locally via Hive only.
 
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 /// One quick template: a fixed analysis type the user can bind to a hotkey.
@@ -12,7 +13,7 @@ class QuickTemplate {
   });
 
   final String id;
-  final String icon; // emoji glyph per the spec chips
+  final IconData icon;
   final String label;
 
   /// The rough prompt injected when the binding fires.
@@ -23,31 +24,31 @@ class QuickTemplate {
 const List<QuickTemplate> kQuickTemplates = [
   QuickTemplate(
     id: 'responsive',
-    icon: '🌐',
+    icon: Icons.language_rounded,
     label: 'Fix responsive',
     cannedPrompt: 'Fix the responsive layout issues on this screen',
   ),
   QuickTemplate(
     id: 'copy',
-    icon: '📝',
+    icon: Icons.edit_note_rounded,
     label: 'Improve copy',
     cannedPrompt: 'Improve the UI copy on this screen',
   ),
   QuickTemplate(
     id: 'security',
-    icon: '🔒',
+    icon: Icons.shield_outlined,
     label: 'Security check',
     cannedPrompt: 'Run a security check on this code',
   ),
   QuickTemplate(
     id: 'accessibility',
-    icon: '♿',
+    icon: Icons.accessibility_new_rounded,
     label: 'Accessibility fix',
     cannedPrompt: 'Find and fix accessibility problems on this screen',
   ),
   QuickTemplate(
     id: 'visual',
-    icon: '🎨',
+    icon: Icons.palette_outlined,
     label: 'Polish visual',
     cannedPrompt: 'Polish the visual design of this screen',
   ),

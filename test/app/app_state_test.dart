@@ -249,7 +249,11 @@ void main() {
     expect(report.items, isNotEmpty);
     expect(
       report.items.map((item) => item.title),
-      contains('No projects linked'),
+      contains('Privacy guard active'),
+    );
+    expect(
+      report.items.map((item) => item.title),
+      isNot(contains('No projects linked')),
     );
     expect(report.readyForAnalysis, isTrue);
   });

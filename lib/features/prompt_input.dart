@@ -407,20 +407,9 @@ class _IslandDragHeader extends StatelessWidget {
                     color: AppTheme.textSecondary,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    height: 1,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.accent.withValues(alpha: 0.35),
-                          Colors.transparent,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                // Empty flexible space keeps the header full-width and
+                // draggable, without a visible line after the name.
+                const Spacer(),
               ],
             ),
           ),

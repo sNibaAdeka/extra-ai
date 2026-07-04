@@ -1,7 +1,6 @@
 import '../models/backend_sync_state.dart';
 import '../models/product_health_report.dart';
 import '../models/project_context.dart';
-import '../models/subscription_state.dart';
 import '../models/sync_outbox_event.dart';
 import 'health_check_service.dart';
 
@@ -12,7 +11,6 @@ class ProductHealthService {
     required AppHealth appHealth,
     required BackendSyncState backendSync,
     required SyncOutboxSummary syncOutbox,
-    required SubscriptionState subscription,
     required List<ProjectContext> linkedProjects,
     required ProjectContext? selectedProject,
     required int loadedFileCount,
@@ -27,13 +25,7 @@ class ProductHealthService {
       items: [
         _generator(appHealth.generator),
         _critic(appHealth.critic),
-        _project(
-          linkedProjects: linkedProjects,
-          selectedProject: selectedProject,
-          loadedFileCount: loadedFileCount,
-        ),
         _privacy(redactedSecretCount),
-        _usage(subscription),
       ],
     );
   }
@@ -98,48 +90,6 @@ class ProductHealthService {
     };
   }
 
-  static ProductHealthItem _project({
-    required List<ProjectContext> linkedProjects,
-    required ProjectContext? selectedProject,
-    required int loadedFileCount,
-  }) {
-    if (linkedProjects.isEmpty) {
-      return const ProductHealthItem(
-        area: ProductHealthArea.project,
-        severity: ProductHealthSeverity.warning,
-        title: 'No projects linked',
-        detail: 'Sync Codex/Claude projects or choose a folder manually.',
-        actionLabel: 'Link project',
-      );
-    }
-    if (selectedProject == null) {
-      return ProductHealthItem(
-        area: ProductHealthArea.project,
-        severity: ProductHealthSeverity.warning,
-        title: 'No active project selected',
-        detail:
-            '${linkedProjects.length} projects are linked, but analysis has no default folder.',
-        actionLabel: 'Select project',
-      );
-    }
-    if (loadedFileCount == 0) {
-      return ProductHealthItem(
-        area: ProductHealthArea.project,
-        severity: ProductHealthSeverity.info,
-        title: 'Project selected',
-        detail:
-            '${selectedProject.displayName} is active; files will be refreshed before analysis.',
-      );
-    }
-    return ProductHealthItem(
-      area: ProductHealthArea.project,
-      severity: ProductHealthSeverity.ok,
-      title: 'Project context ready',
-      detail:
-          '${selectedProject.displayName} has $loadedFileCount fresh ${loadedFileCount == 1 ? 'file' : 'files'} loaded.',
-    );
-  }
-
   static ProductHealthItem _privacy(int redactedSecretCount) {
     if (redactedSecretCount > 0) {
       return ProductHealthItem(
@@ -155,34 +105,6 @@ class ProductHealthService {
       severity: ProductHealthSeverity.ok,
       title: 'Privacy guard active',
       detail: 'Project files are redacted locally before any model request.',
-    );
-  }
-
-  static ProductHealthItem _usage(SubscriptionState subscription) {
-    if (subscription.remainingAnalyses == 0) {
-      return ProductHealthItem(
-        area: ProductHealthArea.usage,
-        severity: ProductHealthSeverity.critical,
-        title: 'Monthly limit reached',
-        detail: subscription.headline,
-        actionLabel: 'Upgrade plan',
-      );
-    }
-    if (subscription.usageRatio >= 0.85) {
-      return ProductHealthItem(
-        area: ProductHealthArea.usage,
-        severity: ProductHealthSeverity.warning,
-        title: 'Plan almost full',
-        detail:
-            '${subscription.remainingAnalyses} analyses remain on ${subscription.tier.label}.',
-        actionLabel: 'View plans',
-      );
-    }
-    return ProductHealthItem(
-      area: ProductHealthArea.usage,
-      severity: ProductHealthSeverity.ok,
-      title: '${subscription.tier.label} plan ready',
-      detail: '${subscription.remainingAnalyses} analyses remain this month.',
     );
   }
 }

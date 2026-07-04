@@ -114,7 +114,10 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const PillTag('🛡 Your data stays local'),
+        const _IconPill(
+          icon: Icons.shield_outlined,
+          label: 'Your data stays local',
+        ),
         const SizedBox(height: 18),
         Text(
           'Welcome to Extra AI',
@@ -532,6 +535,40 @@ class _FramedPreview extends StatelessWidget {
   }
 }
 
+class _IconPill extends StatelessWidget {
+  const _IconPill({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppTheme.surfaceHigh,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppTheme.borderSubtle),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: AppTheme.accent),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: AppTheme.ui(
+              size: 11,
+              weight: FontWeight.w700,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Step 2 right column: three connected flow cards with arrow connectors.
 class _FlowStepCards extends StatelessWidget {
   const _FlowStepCards();
@@ -539,9 +576,9 @@ class _FlowStepCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const steps = [
-      ('⌨', 'Press hotkey'),
-      ('🎯', 'Point at issue'),
-      ('✦', 'Get exact prompt'),
+      (Icons.keyboard_command_key_rounded, 'Press hotkey'),
+      (Icons.center_focus_weak_rounded, 'Point at issue'),
+      (Icons.check_circle_outline_rounded, 'Get exact prompt'),
     ];
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -562,7 +599,7 @@ class _FlowStepCards extends StatelessWidget {
               decoration: AppTheme.card(radius: 12),
               child: Column(
                 children: [
-                  Text(steps[i].$1, style: const TextStyle(fontSize: 20)),
+                  Icon(steps[i].$1, size: 20, color: AppTheme.accent),
                   const SizedBox(height: 8),
                   Text(
                     steps[i].$2,
