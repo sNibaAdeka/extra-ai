@@ -221,7 +221,10 @@ class _ProjectCommandCenter extends StatelessWidget {
     final sync = state.backendSyncState;
 
     return Container(
-      height: 148,
+      // A touch taller than the content needs, so a few pixels of variance
+      // (fonts, longer text) never clip into an overflow stripe. Uses Expanded
+      // children below, so this stays a fixed height.
+      height: 160,
       padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
       decoration: AppTheme.card(radius: 12),
       child: Column(
@@ -235,9 +238,13 @@ class _ProjectCommandCenter extends StatelessWidget {
                 color: AppTheme.signalOrange,
               ),
               const SizedBox(width: 7),
-              Text(
-                'Project command center',
-                style: AppTheme.ui(size: 14, weight: FontWeight.w700),
+              Flexible(
+                child: Text(
+                  'Project command center',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTheme.ui(size: 14, weight: FontWeight.w700),
+                ),
               ),
               const Spacer(),
               Text(
