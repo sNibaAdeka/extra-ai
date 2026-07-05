@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/logo_mark.dart';
+import 'window_drag_area.dart';
 
 /// Floating glass panel for loading/results surfaces. The input state uses the
 /// compact composer directly; this keeps secondary states consistent without
@@ -39,7 +39,8 @@ class OverlayWindow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final panel = ClipRRect(
+    final panel = WindowDragArea(
+      child: ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
@@ -64,6 +65,7 @@ class OverlayWindow extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
 
@@ -159,6 +161,8 @@ class _Header extends StatelessWidget {
   }
 }
 
+/// The header title just shows the move cursor — the whole panel is wrapped
+/// in [WindowDragArea], so dragging works from anywhere.
 class _WindowDragRegion extends StatelessWidget {
   const _WindowDragRegion({required this.child});
 
@@ -166,14 +170,7 @@ class _WindowDragRegion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.move,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: (_) => windowManager.startDragging(),
-        child: child,
-      ),
-    );
+    return MouseRegion(cursor: SystemMouseCursors.move, child: child);
   }
 }
 

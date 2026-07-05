@@ -84,7 +84,7 @@ void main() {
     );
     await tester.enterText(find.byType(TextField), 'fix');
     await tester.pump();
-    expect(find.textContaining('pretty broad'), findsOneWidget);
+    expect(find.textContaining('more detail'), findsOneWidget);
   });
 
   testWidgets('LoadingView renders its title', (tester) async {
@@ -268,7 +268,7 @@ void main() {
   });
 
   testWidgets(
-    'ResultsView shows the honest note when the check was unavailable',
+    'ResultsView does not claim verification when the check was unavailable',
     (tester) async {
       const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
       await tester.pumpWidget(
@@ -282,8 +282,45 @@ void main() {
         ),
       );
       await tester.pump(const Duration(milliseconds: 500));
-      expect(find.textContaining('Quality check unavailable'), findsOneWidget);
       expect(find.text('Verified'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'ResultsView trace card is honest when verification is unavailable',
+    (tester) async {
+      const response = ExtraAIResponse(improvedPrompt: 'Do X.', issues: ['a']);
+      final trace = AnalysisTrace(
+        projectName: 'Extra AI',
+        projectPathHash: 'p1',
+        modelLabel: 'gemini-2.5-flash',
+        filesRead: 2,
+        filesSample: const ['lib/main.dart'],
+        redactedSecrets: 0,
+        historyEntriesUsed: 1,
+        preferences: const AnalysisPreferences(),
+        recommendedChecks: const [],
+        freshnessRegenerated: false,
+        qualityStatus: 'passed',
+        verificationStatus: 'unavailable',
+        generatedAt: DateTime(2026, 7, 4),
+      );
+      await tester.pumpWidget(
+        _host(
+          ResultsView(
+            response: response,
+            trace: trace,
+            verificationStatus: VerificationStatus.unavailable,
+            onCopyInsert: () {},
+            onEdit: () {},
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('Verified'), findsNothing);
+      await tester.tap(find.text('How this was made'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('Quality check unavailable'), findsOneWidget);
     },
   );
 

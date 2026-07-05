@@ -265,6 +265,11 @@ class AppState extends ChangeNotifier {
   /// separate in-memory copy).
   Future<void> Function(PromptHistoryEntry entry)? onAnalysisPersisted;
 
+  /// Main window: wired to [MainFlowController.signOut] at bootstrap so the
+  /// settings modal's Sign out button can return the app to the auth gate.
+  /// Null in the overlay engine (no auth surface there).
+  Future<void> Function()? onSignOut;
+
   /// All linked projects, for the overlay's "Working on:" picker.
   List<ProjectContext> get linkedProjects =>
       _projectsSnapshot ?? _projects.all();

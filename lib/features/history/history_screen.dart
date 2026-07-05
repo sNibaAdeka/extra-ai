@@ -169,42 +169,53 @@ class _HistoryScreenState extends State<HistoryScreen> {
         const SizedBox(height: 14),
 
         Expanded(
-          child: visible.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'No history yet',
-                        style: AppTheme.display(
-                          size: 20,
-                          weight: FontWeight.w600,
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: AppTheme.easeOut,
+            switchOutCurve: AppTheme.easeOut,
+            layoutBuilder: (current, previous) => Stack(
+              alignment: Alignment.topCenter,
+              children: [...previous, ?current],
+            ),
+            child: visible.isEmpty
+                ? Center(
+                    key: const ValueKey('history-empty'),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'No history yet',
+                          style: AppTheme.display(
+                            size: 20,
+                            weight: FontWeight.w600,
+                          ),
                         ),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Your analyses will appear here once you start.',
+                          style: AppTheme.ui(size: 13, color: AppTheme.textDim),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.separated(
+                    key: ValueKey('history-$_filter'),
+                    itemCount: visible.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, i) => _StaggeredHistoryItem(
+                      index: i,
+                      child: _HistoryCard(
+                        entry: visible[i],
+                        favorite: widget.favorites.isFavorite(visible[i]),
+                        onToggleFavorite: () async {
+                          await widget.favorites.toggle(visible[i]);
+                          setState(() {});
+                        },
+                        onOpen: () => widget.onOpenEntry(visible[i]),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Your analyses will appear here once you start.',
-                        style: AppTheme.ui(size: 13, color: AppTheme.textDim),
-                      ),
-                    ],
-                  ),
-                )
-              : ListView.separated(
-                  itemCount: visible.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: 10),
-                  itemBuilder: (context, i) => _StaggeredHistoryItem(
-                    index: i,
-                    child: _HistoryCard(
-                      entry: visible[i],
-                      favorite: widget.favorites.isFavorite(visible[i]),
-                      onToggleFavorite: () async {
-                        await widget.favorites.toggle(visible[i]);
-                        setState(() {});
-                      },
-                      onOpen: () => widget.onOpenEntry(visible[i]),
                     ),
                   ),
-                ),
+          ),
         ),
       ],
     );

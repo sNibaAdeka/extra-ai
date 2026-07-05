@@ -121,6 +121,10 @@ Future<void> bootstrapMainWindow() async {
     appState: appState,
     settings: appState.settings!,
   );
+  appState.onSignOut = () async {
+    appState.closeSettings();
+    await flow.signOut();
+  };
 
   final overlay = _OverlayWindowManager(
     activeUserId: () => auth.activeUserId,
@@ -294,5 +298,5 @@ class _OverlayWindowManager {
 /// separate from AppTheme to avoid importing Flutter widgets into a const.
 class AppThemeColors {
   const AppThemeColors._();
-  static const Color bgVoid = Color(0xFF170D12);
+  static const Color bgVoid = Color(0xFF221327);
 }

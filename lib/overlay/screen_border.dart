@@ -87,9 +87,9 @@ class _BorderPainter extends CustomPainter {
       transform: GradientRotation(progress * 2 * math.pi),
       colors: const [
         AppTheme.accent,
-        AppTheme.accentDeep,
+        AppTheme.accentViolet,
         AppTheme.accent,
-        AppTheme.accentDeep,
+        AppTheme.accentViolet,
         AppTheme.accent,
       ],
       stops: const [0.0, 0.25, 0.5, 0.75, 1.0],

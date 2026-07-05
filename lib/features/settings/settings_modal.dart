@@ -11,18 +11,34 @@ import '../../models/user_profile.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/controls.dart';
 import '../../widgets/hotkey_capture.dart';
+import '../../widgets/shimmer_text.dart';
 
 /// Screens 8–13 — Settings modal: left nav (SETTINGS / ACCOUNT sections) +
 /// right content area. Escape closes from any tab (wired by the shell).
-class SettingsModal extends StatelessWidget {
+class SettingsModal extends StatefulWidget {
   const SettingsModal({super.key, required this.state});
 
   final AppState state;
 
+  @override
+  State<SettingsModal> createState() => _SettingsModalState();
+}
+
+class _SettingsModalState extends State<SettingsModal> {
   static const _appVersion = '0.1.0';
+
+  AppState get state => widget.state;
+
+  /// Previous tab position — content slides toward the newly selected tab
+  /// (down the nav = slides up from below, and vice versa).
+  int _lastTabIndex = 0;
 
   @override
   Widget build(BuildContext context) {
+    final tab = state.settingsTab;
+    final tabIndex = SettingsTab.values.indexOf(tab);
+    final direction = tabIndex >= _lastTabIndex ? 1.0 : -1.0;
+    _lastTabIndex = tabIndex;
     return Container(
       width: 780,
       height: 560,
@@ -50,11 +66,21 @@ class SettingsModal extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Text(
-                        _tabTitle(state.settingsTab),
-                        style: AppTheme.display(
-                          size: 22,
-                          weight: FontWeight.w600,
+                      AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        switchInCurve: AppTheme.easeOut,
+                        switchOutCurve: AppTheme.easeOut,
+                        layoutBuilder: (current, previous) => Stack(
+                          alignment: Alignment.centerLeft,
+                          children: [...previous, ?current],
+                        ),
+                        child: Text(
+                          _tabTitle(tab),
+                          key: ValueKey(tab),
+                          style: AppTheme.display(
+                            size: 22,
+                            weight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -80,7 +106,31 @@ class SettingsModal extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  Expanded(child: SingleChildScrollView(child: _tabBody())),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 240),
+                      switchInCurve: AppTheme.easeOut,
+                      switchOutCurve: AppTheme.easeOut,
+                      layoutBuilder: (current, previous) => Stack(
+                        alignment: Alignment.topLeft,
+                        children: [...previous, ?current],
+                      ),
+                      transitionBuilder: (child, animation) => FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: Offset(0, 0.02 * direction),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      ),
+                      child: SingleChildScrollView(
+                        key: ValueKey(tab),
+                        child: _tabBody(),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -204,13 +254,13 @@ class SettingsModal extends StatelessWidget {
 class _SettingCard extends StatelessWidget {
   const _SettingCard({
     required this.title,
-    required this.subtitle,
+    this.subtitle,
     required this.trailing,
     this.tag,
   });
 
   final String title;
-  final String subtitle;
+  final String? subtitle;
   final Widget trailing;
   final Widget? tag;
 
@@ -235,11 +285,16 @@ class _SettingCard extends StatelessWidget {
                     if (tag != null) ...[const SizedBox(width: 8), tag!],
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: AppTheme.ui(size: 12.5, color: AppTheme.textSecondary),
-                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle!,
+                    style: AppTheme.ui(
+                      size: 12.5,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -272,7 +327,6 @@ class _GeneralTabState extends State<_GeneralTab> {
       children: [
         _SettingCard(
           title: 'Theme',
-          subtitle: 'Choose appearance',
           trailing: SegmentedControl<String>(
             options: const ['system', 'light', 'dark'],
             labels: const ['System', 'Light', 'Dark'],
@@ -285,7 +339,6 @@ class _GeneralTabState extends State<_GeneralTab> {
         ),
         _SettingCard(
           title: 'Launch at login',
-          subtitle: 'Start Extra AI when you log in to your Mac',
           trailing: EmberToggle(
             value: s.launchAtLogin,
             onChanged: (v) async {
@@ -296,7 +349,6 @@ class _GeneralTabState extends State<_GeneralTab> {
         ),
         _SettingCard(
           title: 'History retention',
-          subtitle: 'How long to keep your analysis history',
           trailing: _RetentionDropdown(
             value: s.historyRetention,
             onChanged: (v) async {
@@ -305,21 +357,13 @@ class _GeneralTabState extends State<_GeneralTab> {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.only(left: 4, bottom: 16),
-          child: Text(
-            'Up to 5 most recent analyses are kept per project for context, '
-            'regardless of this setting',
-            style: AppTheme.ui(size: 11.5, color: AppTheme.textDim),
-          ),
-        ),
+        const SizedBox(height: 4),
         Text('EXPERIMENTAL', style: AppTheme.sectionLabel()),
         const SizedBox(height: 10),
         _SettingCard(
           title: 'Visual grounding',
           tag: const PillTag('EXPERIMENTAL'),
-          subtitle:
-              'Extra AI annotates screenshot regions when it finds an issue',
+          subtitle: 'Annotates screenshots when it finds an issue',
           trailing: EmberToggle(
             value: s.visualGrounding,
             onChanged: (v) async {
@@ -330,8 +374,6 @@ class _GeneralTabState extends State<_GeneralTab> {
         ),
         _SettingCard(
           title: 'Auto-detect stack',
-          subtitle:
-              "Automatically identify your project's framework from its files",
           trailing: EmberToggle(
             value: s.autoDetectStack,
             onChanged: (v) async {
@@ -342,7 +384,7 @@ class _GeneralTabState extends State<_GeneralTab> {
         ),
         _SettingCard(
           title: 'Stealth mode',
-          subtitle: 'Hide Extra AI windows from screen sharing and recordings',
+          subtitle: 'Hidden from screen sharing and recordings',
           trailing: EmberToggle(
             value: s.stealthMode,
             onChanged: (v) async {
@@ -427,13 +469,7 @@ class _ShortcutsTabState extends State<_ShortcutsTab> {
                 'Analysis hotkey',
                 style: AppTheme.ui(size: 14, weight: FontWeight.w600),
               ),
-              const SizedBox(height: 3),
-              Text(
-                'Press this combination anywhere to open Extra AI and analyze '
-                'your screen.',
-                style: AppTheme.ui(size: 12.5, color: AppTheme.textSecondary),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               KeycapBadge.combo(s.hotkeyCombo),
               const SizedBox(height: 12),
               if (_capturing)
@@ -764,7 +800,10 @@ class _ProfileTabState extends State<_ProfileTab> {
         _SettingCard(
           title: 'Sign out',
           subtitle: 'Your local history stays on this device',
-          trailing: GhostButtonSmall(label: 'Sign out', onTap: () {}),
+          trailing: GhostButtonSmall(
+            label: 'Sign out',
+            onTap: () => widget.state.onSignOut?.call(),
+          ),
         ),
       ],
     );
@@ -965,12 +1004,6 @@ class _PlansTabState extends State<_PlansTab> {
           busy: _redeeming,
           error: _promoError,
           onRedeem: _redeemPromo,
-        ),
-        const SizedBox(height: 12),
-        Text(
-          'Have a promo code? Redeem it above. MVP billing uses a local adapter, '
-          'so Stripe/Supabase can replace it without changing the UI.',
-          style: AppTheme.ui(size: 11.5, color: AppTheme.textDim),
         ),
       ],
     );
@@ -1265,10 +1298,16 @@ class _PlanCard extends StatelessWidget {
             title,
             style: AppTheme.display(size: 22, weight: FontWeight.w700),
           ),
-          Text(
-            price,
-            style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
-          ),
+          if (popular)
+            IridescentText(
+              price,
+              style: AppTheme.ui(size: 13, weight: FontWeight.w700),
+            )
+          else
+            Text(
+              price,
+              style: AppTheme.ui(size: 13, color: AppTheme.textSecondary),
+            ),
           const SizedBox(height: 12),
           for (final f in features)
             Padding(
@@ -1404,10 +1443,8 @@ class _PrivacyTab extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'All prompts, screenshots, and analysis history are stored on your '
-          'device only. Secrets are redacted locally before any analysis '
-          'request. Nothing beyond the current request is ever sent to our '
-          'servers.',
+          'Everything stays on your device — secrets are redacted before any '
+          'request leaves it.',
           style: AppTheme.ui(size: 11.5, color: AppTheme.textDim),
         ),
       ],
@@ -1561,7 +1598,7 @@ class _UpdatesTabState extends State<_UpdatesTab> {
       children: [
         const _SettingCard(
           title: 'Version',
-          subtitle: SettingsModal._appVersion,
+          subtitle: _SettingsModalState._appVersion,
           trailing: SizedBox.shrink(),
         ),
         GhostButtonSmall(

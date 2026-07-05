@@ -41,7 +41,6 @@ class _AppShellState extends State<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    final entries = state.allHistory();
     final sectionIndex = _sectionIndex(state.shellSection);
     final sectionDirection = sectionIndex >= _lastSectionIndex ? 1.0 : -1.0;
     _lastSectionIndex = sectionIndex;
@@ -50,7 +49,16 @@ class _AppShellState extends State<AppShell> {
     // (Window 1), so it expands to the window size rather than a fixed panel.
     return Container(
       clipBehavior: Clip.antiAlias,
-      decoration: const BoxDecoration(color: AppTheme.bgVoid),
+      // Quiet violet field warming toward one corner — the landing hero
+      // backdrop, not a flat fill.
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [AppTheme.bgVoid, AppTheme.bgViolet, AppTheme.bgMid],
+          stops: [0.0, 0.62, 1.0],
+        ),
+      ),
       child: Stack(
         children: [
           Row(
@@ -60,12 +68,12 @@ class _AppShellState extends State<AppShell> {
               Expanded(
                 child: Column(
                   children: [
-                    _topBar(entries.length),
+                    _topBar(),
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 4, 24, 20),
                         child: AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 200),
+                          duration: const Duration(milliseconds: 240),
                           switchInCurve: AppTheme.easeOut,
                           switchOutCurve: AppTheme.easeOut,
                           transitionBuilder: (child, animation) {
@@ -219,25 +227,12 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  Widget _topBar(int totalAnalyses) {
+  Widget _topBar() {
     final s = state.settings;
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 12),
       child: Row(
         children: [
-          const Spacer(),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              borderRadius: BorderRadius.circular(100),
-              border: Border.all(color: AppTheme.borderSubtle),
-            ),
-            child: Text(
-              '$totalAnalyses analyses total',
-              style: AppTheme.ui(size: 12, color: AppTheme.textPrimary),
-            ),
-          ),
           const Spacer(),
           Tooltip(
             message: 'Notifications',

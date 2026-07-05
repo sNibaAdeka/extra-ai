@@ -2,11 +2,12 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:window_manager/window_manager.dart';
 
 import '../models/analysis_preferences.dart';
+import '../overlay/window_drag_area.dart';
 import '../theme/app_theme.dart';
 import '../understanding/intent_pre_checker.dart';
+import '../widgets/controls.dart';
 
 /// Compact hotkey composer. It keeps the overlay visually quiet: a single
 /// floating prompt box with file/project controls and a send affordance.
@@ -51,7 +52,6 @@ class _PromptInputState extends State<PromptInput> {
   late final TextEditingController _controller;
   IntentClarity _clarity = IntentClarity.clear;
   String? _validationError;
-  bool _deepThink = true;
   bool _visualContext = true;
   bool _autoFileSearch = true;
   bool _securityAudit = true;
@@ -130,7 +130,8 @@ class _PromptInputState extends State<PromptInput> {
       },
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 700),
-        child: ClipRRect(
+        child: WindowDragArea(
+          child: ClipRRect(
           borderRadius: BorderRadius.circular(28),
           child: BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
@@ -147,13 +148,11 @@ class _PromptInputState extends State<PromptInput> {
                       ),
                     ),
               decoration: AppTheme.islandPanel(),
-              child: CustomPaint(
-                painter: const _IslandGridPainter(),
-                child: Column(
+              child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _IslandDragHeader(),
+                    _IslandDragHeader(onDismiss: widget.onDismiss),
                     const SizedBox(height: 7),
                     TextField(
                       controller: _controller,
@@ -170,9 +169,7 @@ class _PromptInputState extends State<PromptInput> {
                       decoration: InputDecoration(
                         isDense: true,
                         border: InputBorder.none,
-                        hintText: _deepThink
-                            ? 'Think deeply...'
-                            : 'Tell Extra AI what to fix...',
+                        hintText: 'Tell Extra AI what to fix...',
                         hintStyle: AppTheme.display(
                           size: 19,
                           weight: FontWeight.w500,
@@ -184,8 +181,7 @@ class _PromptInputState extends State<PromptInput> {
                         _clarity == IntentClarity.veryVague) ...[
                       const SizedBox(height: 6),
                       Text(
-                        _validationError ??
-                            'This is pretty broad. A bit more detail helps.',
+                        _validationError ?? 'Add a bit more detail.',
                         style: AppTheme.ui(
                           size: 12,
                           color: _validationError == null
@@ -200,70 +196,34 @@ class _PromptInputState extends State<PromptInput> {
                       _ProjectBriefBar(text: widget.projectBrief!),
                     ],
                     const SizedBox(height: 14),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxWidth < 560;
-                        return Row(
-                          children: [
-                            _ComposerIconButton(
-                              icon: Icons.attach_file_rounded,
-                              tooltip: widget.fileCount > 0
-                                  ? '${widget.fileCount} files loaded from the selected project'
-                                  : 'Attach files manually',
-                              onTap: widget.onPickFiles,
-                            ),
-                            if (widget.fileCount > 0) ...[
-                              const SizedBox(width: 6),
-                              _FileCountChip(count: widget.fileCount),
-                            ],
-                            const SizedBox(width: 7),
-                            _ComposerIconButton(
-                              icon: Icons.center_focus_weak_rounded,
-                              tooltip:
-                                  'Screen context: include what is visible on your screen',
-                              active: _visualContext,
-                              onTap: () => setState(
-                                () => _visualContext = !_visualContext,
-                              ),
-                            ),
-                            const SizedBox(width: 7),
-                            _ThinkButton(
-                              active: _deepThink,
-                              showLabel: !compact,
-                              onTap: () =>
-                                  setState(() => _deepThink = !_deepThink),
-                            ),
-                            const SizedBox(width: 7),
-                            if (widget.projectControl != null)
-                              widget.projectControl!
-                            else
-                              _ComposerIconButton(
-                                icon: Icons.folder_open_outlined,
-                                tooltip: 'Choose project folder',
-                                onTap: widget.onPickFiles,
-                              ),
-                            const SizedBox(width: 7),
-                            _AdvancedToggle(
-                              open: _advancedOpen,
-                              activeCount: _activeAdvancedCount,
-                              onTap: () => setState(
-                                () => _advancedOpen = !_advancedOpen,
-                              ),
-                            ),
-                            const Spacer(),
-                            if (widget.onDismiss != null) ...[
-                              if (!compact)
-                                _ComposerIconButton(
-                                  icon: Icons.close_rounded,
-                                  tooltip: 'Close overlay',
-                                  onTap: widget.onDismiss,
-                                ),
-                              if (!compact) const SizedBox(width: 8),
-                            ],
-                            _SendButton(hasText: hasText, onTap: _analyze),
-                          ],
-                        );
-                      },
+                    Row(
+                      children: [
+                        _ComposerIconButton(
+                          icon: Icons.attach_file_rounded,
+                          tooltip: widget.fileCount > 0
+                              ? '${widget.fileCount} files loaded'
+                              : 'Attach files',
+                          onTap: widget.onPickFiles,
+                        ),
+                        if (widget.fileCount > 0) ...[
+                          const SizedBox(width: 6),
+                          _FileCountChip(count: widget.fileCount),
+                        ],
+                        if (widget.projectControl != null) ...[
+                          const SizedBox(width: 7),
+                          widget.projectControl!,
+                        ],
+                        const SizedBox(width: 7),
+                        _AdvancedToggle(
+                          open: _advancedOpen,
+                          activeCount: _activeAdvancedCount,
+                          onTap: () => setState(
+                            () => _advancedOpen = !_advancedOpen,
+                          ),
+                        ),
+                        const Spacer(),
+                        _SendButton(hasText: hasText, onTap: _analyze),
+                      ],
                     ),
                     AnimatedSize(
                       duration: AppTheme.transitionMs,
@@ -276,6 +236,7 @@ class _PromptInputState extends State<PromptInput> {
                                 autoFileSearch: _autoFileSearch,
                                 securityAudit: _securityAudit,
                                 bugAudit: _bugAudit,
+                                screenContext: _visualContext,
                                 effort: _effort,
                                 actionMode: _actionMode,
                                 onAutoFileSearch: () => setState(
@@ -286,6 +247,9 @@ class _PromptInputState extends State<PromptInput> {
                                 ),
                                 onBugAudit: () =>
                                     setState(() => _bugAudit = !_bugAudit),
+                                onScreenContext: () => setState(
+                                  () => _visualContext = !_visualContext,
+                                ),
                                 onEffortChanged: (value) =>
                                     setState(() => _effort = value),
                                 onModeChanged: (value) =>
@@ -320,8 +284,7 @@ class _ProjectBriefBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Tooltip(
-      message:
-          'Project map is rebuilt locally from the selected folder before analysis',
+      message: 'Rebuilt locally from the selected folder',
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
@@ -365,94 +328,66 @@ class _ProjectBriefBar extends StatelessWidget {
   }
 }
 
+/// Slim island header: brand mark + name on the left, a quiet close on the
+/// right. The whole island drags the window (see [WindowDragArea]), so this
+/// row is just identity — the move cursor hints that dragging works here.
 class _IslandDragHeader extends StatelessWidget {
-  const _IslandDragHeader();
+  const _IslandDragHeader({this.onDismiss});
+
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
       cursor: SystemMouseCursors.move,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: (_) => windowManager.startDragging(),
-        child: Tooltip(
-          message: 'Drag the Extra AI island',
-          child: SizedBox(
-            height: 18,
-            child: Row(
-              children: [
-                Container(
-                  width: 18,
-                  height: 18,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppTheme.accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(
-                      color: AppTheme.accent.withValues(alpha: 0.24),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.data_object_rounded,
-                    size: 13,
-                    color: AppTheme.accent,
-                  ),
+      child: SizedBox(
+        height: 18,
+        child: Row(
+          children: [
+            Container(
+              width: 18,
+              height: 18,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppTheme.accent.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: AppTheme.accent.withValues(alpha: 0.24),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  'extra.',
-                  style: AppTheme.ui(
-                    size: 12,
-                    weight: FontWeight.w700,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-                // Empty flexible space keeps the header full-width and
-                // draggable, without a visible line after the name.
-                const Spacer(),
-              ],
+              ),
+              child: const Icon(
+                Icons.data_object_rounded,
+                size: 13,
+                color: AppTheme.accent,
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            Text(
+              'extra.',
+              style: AppTheme.ui(
+                size: 12,
+                weight: FontWeight.w700,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const Spacer(),
+            if (onDismiss != null)
+              Tooltip(
+                message: 'Close (Esc)',
+                child: PressableScale(
+                  onTap: onDismiss,
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 15,
+                    color: AppTheme.textDim,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
-}
-
-class _IslandGridPainter extends CustomPainter {
-  const _IslandGridPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (size.isEmpty) return;
-    final paint = Paint()
-      ..color = AppTheme.textPrimary.withValues(alpha: 0.035)
-      ..strokeWidth = 1;
-    const step = 48.0;
-    for (var x = step; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (var y = step; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-    final glow = Paint()
-      ..shader =
-          RadialGradient(
-            colors: [
-              AppTheme.accent.withValues(alpha: 0.11),
-              Colors.transparent,
-            ],
-          ).createShader(
-            Rect.fromCircle(
-              center: size.center(Offset.zero),
-              radius: size.width * 0.7,
-            ),
-          );
-    canvas.drawRect(Offset.zero & size, glow);
-  }
-
-  @override
-  bool shouldRepaint(covariant _IslandGridPainter oldDelegate) => false;
 }
 
 class _ComposerIconButton extends StatelessWidget {
@@ -460,17 +395,14 @@ class _ComposerIconButton extends StatelessWidget {
     required this.icon,
     required this.tooltip,
     required this.onTap,
-    this.active = false,
   });
 
   final IconData icon;
   final String tooltip;
   final VoidCallback? onTap;
-  final bool active;
 
   @override
   Widget build(BuildContext context) {
-    final color = active ? AppTheme.accent : AppTheme.textDim;
     return Tooltip(
       message: tooltip,
       child: Semantics(
@@ -479,23 +411,10 @@ class _ComposerIconButton extends StatelessWidget {
         child: InkResponse(
           onTap: onTap,
           radius: 20,
-          child: AnimatedContainer(
-            duration: AppTheme.microMs,
+          child: SizedBox(
             width: 32,
             height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: active
-                  ? AppTheme.accent.withValues(alpha: 0.12)
-                  : Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: active
-                    ? AppTheme.accent.withValues(alpha: 0.65)
-                    : Colors.transparent,
-              ),
-            ),
-            child: Icon(icon, size: 19, color: color),
+            child: Icon(icon, size: 19, color: AppTheme.textDim),
           ),
         ),
       ),
@@ -589,11 +508,13 @@ class _AdvancedControls extends StatelessWidget {
     required this.autoFileSearch,
     required this.securityAudit,
     required this.bugAudit,
+    required this.screenContext,
     required this.effort,
     required this.actionMode,
     required this.onAutoFileSearch,
     required this.onSecurityAudit,
     required this.onBugAudit,
+    required this.onScreenContext,
     required this.onEffortChanged,
     required this.onModeChanged,
   });
@@ -601,11 +522,13 @@ class _AdvancedControls extends StatelessWidget {
   final bool autoFileSearch;
   final bool securityAudit;
   final bool bugAudit;
+  final bool screenContext;
   final ModelEffort effort;
   final ActionMode actionMode;
   final VoidCallback onAutoFileSearch;
   final VoidCallback onSecurityAudit;
   final VoidCallback onBugAudit;
+  final VoidCallback onScreenContext;
   final ValueChanged<ModelEffort> onEffortChanged;
   final ValueChanged<ActionMode> onModeChanged;
 
@@ -651,25 +574,29 @@ class _AdvancedControls extends StatelessWidget {
                   icon: Icons.manage_search_rounded,
                   label: 'Files',
                   active: autoFileSearch,
-                  tooltip:
-                      'Auto file search: scan related files in the selected project folder',
+                  tooltip: 'Scan related project files',
                   onTap: onAutoFileSearch,
                 ),
                 _LabeledToggle(
                   icon: Icons.shield_outlined,
                   label: 'Security',
                   active: securityAudit,
-                  tooltip:
-                      'Security audit: check exposed secrets and unsafe patterns',
+                  tooltip: 'Check for exposed secrets',
                   onTap: onSecurityAudit,
                 ),
                 _LabeledToggle(
                   icon: Icons.bug_report_outlined,
                   label: 'Bugs',
                   active: bugAudit,
-                  tooltip:
-                      'Bug audit: look for visual, responsive, and logic regressions',
+                  tooltip: 'Look for visual and logic regressions',
                   onTap: onBugAudit,
+                ),
+                _LabeledToggle(
+                  icon: Icons.center_focus_weak_rounded,
+                  label: 'Screen',
+                  active: screenContext,
+                  tooltip: 'Include what\'s on screen',
+                  onTap: onScreenContext,
                 ),
                 _EffortMenu(value: effort, onChanged: onEffortChanged),
                 _ModeMenu(value: actionMode, onChanged: onModeChanged),
@@ -758,21 +685,9 @@ class _EffortMenu extends StatelessWidget {
       position: PopupMenuPosition.under,
       onSelected: onChanged,
       itemBuilder: (context) => [
-        _effortItem(
-          ModelEffort.fast,
-          'Fast',
-          'Shortest wait, lighter analysis',
-        ),
-        _effortItem(
-          ModelEffort.balanced,
-          'Balanced',
-          'Best default for most UI/code fixes',
-        ),
-        _effortItem(
-          ModelEffort.deep,
-          'Deep',
-          'More context and stricter checks',
-        ),
+        _effortItem(ModelEffort.fast, 'Fast', 'Quickest, lighter check'),
+        _effortItem(ModelEffort.balanced, 'Balanced', 'Good default'),
+        _effortItem(ModelEffort.deep, 'Deep', 'Slower, stricter checks'),
       ],
       child: _ControlPill(
         icon: Icons.speed_rounded,
@@ -811,21 +726,9 @@ class _ModeMenu extends StatelessWidget {
       position: PopupMenuPosition.under,
       onSelected: onChanged,
       itemBuilder: (context) => [
-        _modeItem(
-          ActionMode.promptOnly,
-          'Prompt',
-          'Copy-ready instruction for any AI coding tool',
-        ),
-        _modeItem(
-          ActionMode.fullAccess,
-          'Full access',
-          'Ask the coding agent to inspect related files first',
-        ),
-        _modeItem(
-          ActionMode.autoEdit,
-          'Auto edit',
-          'Ask the coding agent to edit directly and run checks',
-        ),
+        _modeItem(ActionMode.promptOnly, 'Prompt', 'Copy-ready instruction'),
+        _modeItem(ActionMode.fullAccess, 'Full access', 'Inspects files first'),
+        _modeItem(ActionMode.autoEdit, 'Auto edit', 'Edits and runs checks'),
       ],
       child: _ControlPill(
         icon: Icons.tune_rounded,
@@ -905,66 +808,6 @@ class _MenuText extends StatelessWidget {
             style: AppTheme.ui(size: 11, color: AppTheme.textDim),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ThinkButton extends StatelessWidget {
-  const _ThinkButton({
-    required this.active,
-    required this.onTap,
-    this.showLabel = true,
-  });
-
-  final bool active;
-  final VoidCallback onTap;
-  final bool showLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: 'Think mode',
-      child: InkResponse(
-        onTap: onTap,
-        radius: 24,
-        child: AnimatedContainer(
-          duration: AppTheme.microMs,
-          height: 32,
-          padding: EdgeInsets.symmetric(horizontal: active ? 12 : 7),
-          decoration: BoxDecoration(
-            color: active
-                ? AppTheme.accent.withValues(alpha: 0.13)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(100),
-            border: Border.all(
-              color: active
-                  ? AppTheme.accent.withValues(alpha: 0.75)
-                  : Colors.transparent,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.psychology_alt_outlined,
-                size: 20,
-                color: active ? AppTheme.accent : AppTheme.textDim,
-              ),
-              if (active && showLabel) ...[
-                const SizedBox(width: 7),
-                Text(
-                  'Think',
-                  style: AppTheme.ui(
-                    size: 13,
-                    weight: FontWeight.w600,
-                    color: AppTheme.accent,
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
       ),
     );
   }

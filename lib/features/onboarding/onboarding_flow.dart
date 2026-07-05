@@ -5,6 +5,7 @@ import '../../theme/app_theme.dart';
 import '../../widgets/controls.dart';
 import '../../widgets/gradient_button.dart';
 import '../../widgets/hotkey_capture.dart';
+import '../../widgets/shimmer_text.dart';
 
 /// Three-step onboarding (Screens 1–3): welcome, hotkey, profile questions.
 /// Two-column layout — text content left (max 480px), framed preview right —
@@ -119,7 +120,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
           label: 'Your data stays local',
         ),
         const SizedBox(height: 18),
-        Text(
+        IridescentText(
           'Welcome to Extra AI',
           style: AppTheme.display(size: 40, weight: FontWeight.w600),
         ),

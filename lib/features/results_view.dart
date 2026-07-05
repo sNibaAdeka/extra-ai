@@ -93,11 +93,6 @@ class _ResultsViewState extends State<ResultsView> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          if (widget.verificationStatus ==
-                              VerificationStatus.unavailable) ...[
-                            const _QualityCheckNote(),
-                            const SizedBox(height: 12),
-                          ],
                           if (widget.qualityReport != null) ...[
                             _LocalQualityCard(report: widget.qualityReport!),
                             const SizedBox(height: 12),
@@ -317,16 +312,11 @@ class _LocalQualityCard extends StatelessWidget {
 
   String get _details {
     final parts = [
-      if (report.failedChecks.isNotEmpty)
-        'Failed: ${report.failedChecks.join(' | ')}',
-      if (report.warnings.isNotEmpty)
-        'Warnings: ${report.warnings.join(' | ')}',
-      if (report.passedChecks.isNotEmpty)
-        'Passed: ${report.passedChecks.join(' | ')}',
+      ...report.failedChecks.map((c) => '✗ $c'),
+      ...report.warnings.map((c) => '! $c'),
+      ...report.passedChecks.map((c) => '✓ $c'),
     ];
-    return parts.isEmpty
-        ? 'Local deterministic response check.'
-        : parts.join('\n');
+    return parts.isEmpty ? 'Quick automatic check of the response.' : parts.join('\n');
   }
 }
 
@@ -479,26 +469,25 @@ class _AnalysisTraceCard extends StatelessWidget {
               _TraceLine(
                 icon: Icons.verified_user_outlined,
                 label: trace.wasVerified
-                    ? 'Checked by an independent second model'
-                    : 'Quality check unavailable — showing best result',
+                    ? 'Verified by a second model'
+                    : 'Quality check unavailable',
               ),
               if (trace.redactedSecrets > 0)
                 _TraceLine(
                   icon: Icons.lock_outline_rounded,
                   label:
-                      'Redacted ${trace.redactedSecrets} potential ${trace.redactedSecrets == 1 ? 'secret' : 'secrets'} before analysis',
+                      '${trace.redactedSecrets} ${trace.redactedSecrets == 1 ? 'secret' : 'secrets'} redacted',
                 ),
               if (trace.recommendedChecks.isNotEmpty)
                 _TraceLine(
                   icon: Icons.fact_check_outlined,
-                  label: 'Applied checks: ${trace.recommendedChecks.join(', ')}',
+                  label: trace.recommendedChecks.join(', '),
                 ),
               // Only when a stale repeat was actually detected + regenerated.
               if (trace.freshnessRegenerated)
                 _TraceLine(
                   icon: Icons.refresh_rounded,
-                  label:
-                      'Detected a repeat request and re-analyzed with fresh context',
+                  label: 'Re-analyzed with fresh context',
                 ),
             ],
           ),
@@ -533,41 +522,6 @@ class _TraceLine extends StatelessWidget {
                 height: 1.3,
                 color: AppTheme.textSecondary,
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Honest degradation note: the critic was unreachable, the best available
-/// draft is shown anyway — reliability means graceful degradation, not an
-/// all-or-nothing gate.
-class _QualityCheckNote extends StatelessWidget {
-  const _QualityCheckNote();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.signalOrange.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppTheme.signalOrange.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline,
-            size: 14,
-            color: AppTheme.signalOrange,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              'Quality check unavailable — showing best result.',
-              style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
             ),
           ),
         ],

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_state.dart';
 import '../../models/backend_sync_state.dart';
-import '../../models/product_health_report.dart';
 import '../../models/project_context.dart';
 import '../../models/prompt_history_entry.dart';
 import '../../theme/app_theme.dart';
@@ -71,19 +70,13 @@ class HomeDashboard extends StatelessWidget {
         const SizedBox(height: 6),
         Row(
           children: [
-            _stat(
-              Icons.local_fire_department_outlined,
-              '${_streak(entries)} day streak',
-            ),
+            _stat('${_streak(entries)} day streak'),
             _dot(),
-            _stat(Icons.bolt_outlined, '$todayCount today'),
+            _stat('$todayCount today'),
             _dot(),
-            _stat(Icons.history_rounded, '${entries.length} total'),
+            _stat('${entries.length} total'),
             _dot(),
-            _stat(
-              Icons.workspace_premium_outlined,
-              '${subscription.tier.label} plan',
-            ),
+            _stat('${subscription.tier.label} plan'),
           ],
         ),
         const SizedBox(height: 16),
@@ -94,8 +87,6 @@ class HomeDashboard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
         ],
-        _ProductHealthStrip(report: state.productHealthReport),
-        const SizedBox(height: 12),
         _ProjectCommandCenter(state: state, onOpenEntry: onOpenEntry),
         const SizedBox(height: 16),
 
@@ -104,25 +95,11 @@ class HomeDashboard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(
-                flex: 6,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(child: _WeekCard(counts: counts)),
-                    const SizedBox(height: 12),
-                    const SizedBox(height: 88, child: _SpotlightCarousel()),
-                  ],
-                ),
-              ),
+              Expanded(flex: 6, child: _WeekCard(counts: counts)),
               const SizedBox(width: 16),
               Expanded(
                 flex: 4,
-                child: _RecentCard(
-                  entries: entries,
-                  hotkey: state.settings?.hotkeyCombo ?? '⌘⇧E',
-                  onOpenEntry: onOpenEntry,
-                ),
+                child: _RecentCard(entries: entries, onOpenEntry: onOpenEntry),
               ),
             ],
           ),
@@ -131,14 +108,8 @@ class HomeDashboard extends StatelessWidget {
     );
   }
 
-  static Widget _stat(IconData icon, String label) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 14, color: AppTheme.textSecondary),
-      const SizedBox(width: 4),
-      Text(label, style: AppTheme.ui(size: 12, color: AppTheme.textDim)),
-    ],
-  );
+  static Widget _stat(String label) =>
+      Text(label, style: AppTheme.ui(size: 12, color: AppTheme.textDim));
 
   static Widget _dot() => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -205,23 +176,11 @@ class _UsageLimitBanner extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "You've used this month's $planLabel analyses",
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.ui(size: 13.5, weight: FontWeight.w800),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Upgrade to keep generating prompts without waiting for the next reset.',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTheme.ui(size: 12, color: AppTheme.textSecondary),
-                ),
-              ],
+            child: Text(
+              "You've used this month's $planLabel analyses",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.ui(size: 13.5, weight: FontWeight.w800),
             ),
           ),
           const SizedBox(width: 12),
@@ -242,57 +201,6 @@ class _UsageLimitBanner extends StatelessWidget {
                   weight: FontWeight.w800,
                   color: AppTheme.onAccent,
                 ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ProductHealthStrip extends StatelessWidget {
-  const _ProductHealthStrip({required this.report});
-
-  final ProductHealthReport report;
-
-  @override
-  Widget build(BuildContext context) {
-    // Understated by design: a small dot + one calm line. When everything is
-    // fine it reassures without shouting; when something is degraded it says so
-    // in plain language — never raw error codes or internal service names.
-    final ok = report.allClear;
-    final color = ok ? AppTheme.success : AppTheme.signalOrange;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: BoxDecoration(
-        color: AppTheme.surfaceHigh.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.18)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: color.withValues(alpha: 0.5), blurRadius: 6),
-              ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              report.dashboardLine,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTheme.ui(
-                size: 12.5,
-                weight: FontWeight.w600,
-                color: ok ? AppTheme.textSecondary : AppTheme.textPrimary,
               ),
             ),
           ),
@@ -425,7 +333,9 @@ class _ProjectCommandCenter extends StatelessWidget {
                       ),
                       const SizedBox(height: 10),
                       SizedBox(
-                        height: 42,
+                        // Two text lines (~27px at height 1.2) + 16px padding
+                        // + 2px border — 50 leaves a safe cushion.
+                        height: 50,
                         child: otherProjects.isEmpty
                             ? _SingleProjectStrip(project: selectedProject)
                             : ListView.separated(
@@ -506,8 +416,7 @@ class _BackendSyncChip extends StatelessWidget {
       BackendSyncMode.cloudConnected => Icons.cloud_done_outlined,
     };
     return Tooltip(
-      message:
-          '${sync.summary}\nReady adapters: ${sync.adaptersReady.isEmpty ? 'none yet' : sync.adaptersReady.join(', ')}',
+      message: sync.summary,
       child: Container(
         height: 24,
         padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -554,8 +463,8 @@ class _EmptyProjectCommand extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(
           child: Text(
-            'Sync Codex / Claude or choose a folder to start project memory.',
-            maxLines: 2,
+            'No project linked yet',
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTheme.ui(size: 12, color: AppTheme.textDim),
           ),
@@ -627,18 +536,19 @@ class _SelectedProjectMap extends StatelessWidget {
               if (latest != null) _QualityMiniChip(entry: latest!),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            summary ??
-                '${project.detectedStack} · ${project.fileNames.length} files remembered',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: AppTheme.ui(
-              size: 12,
-              height: 1.25,
-              color: AppTheme.textSecondary,
+          if (summary != null) ...[
+            const SizedBox(height: 6),
+            Text(
+              summary!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTheme.ui(
+                size: 12,
+                height: 1.25,
+                color: AppTheme.textSecondary,
+              ),
             ),
-          ),
+          ],
           const Spacer(),
           Row(
             children: [
@@ -757,6 +667,7 @@ class _ProjectCard extends StatelessWidget {
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
                       project.displayName,
@@ -766,6 +677,7 @@ class _ProjectCard extends StatelessWidget {
                         size: 11.5,
                         weight: FontWeight.w700,
                         color: AppTheme.textPrimary,
+                        height: 1.2,
                       ),
                     ),
                     Text(
@@ -774,7 +686,11 @@ class _ProjectCard extends StatelessWidget {
                           : relativeTime(latest!.timestamp),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTheme.ui(size: 10.5, color: AppTheme.textDim),
+                      style: AppTheme.ui(
+                        size: 10.5,
+                        color: AppTheme.textDim,
+                        height: 1.2,
+                      ),
                     ),
                   ],
                 ),
@@ -853,33 +769,9 @@ class _WeekCard extends StatelessWidget {
                 style: AppTheme.ui(size: 14, weight: FontWeight.w600),
               ),
               const Spacer(),
-              // Decorative period dropdown (Daily is the only MVP option).
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.borderSubtle),
-                ),
-                child: Row(
-                  children: [
-                    Text(
-                      'Daily',
-                      style: AppTheme.ui(
-                        size: 12,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.keyboard_arrow_down,
-                      size: 14,
-                      color: AppTheme.textDim,
-                    ),
-                  ],
-                ),
+              Text(
+                'Daily',
+                style: AppTheme.ui(size: 12, color: AppTheme.textDim),
               ),
             ],
           ),
@@ -950,147 +842,14 @@ class _WeekCard extends StatelessWidget {
   }
 }
 
-class _SpotlightCarousel extends StatefulWidget {
-  const _SpotlightCarousel();
-
-  @override
-  State<_SpotlightCarousel> createState() => _SpotlightCarouselState();
-}
-
-class _SpotlightCarouselState extends State<_SpotlightCarousel> {
-  static const _tips = [
-    (
-      'It remembers your project',
-      'Switch from Cursor to Windsurf mid-project — Extra AI still knows '
-          'what you already tried.',
-      'See how',
-    ),
-    (
-      'Grounded in what you see',
-      'Not just your code — Extra AI looks at the actual screenshot too.',
-      null,
-    ),
-    (
-      'Security hygiene included',
-      'Catches hardcoded keys and common vulnerabilities automatically.',
-      null,
-    ),
-  ];
-
-  int _index = 0;
-
-  void _go(int delta) =>
-      setState(() => _index = (_index + delta) % _tips.length);
-
-  @override
-  Widget build(BuildContext context) {
-    final tip = _tips[_index % _tips.length];
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-      decoration: AppTheme.card(radius: 12),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppTheme.accent.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppTheme.accent.withValues(alpha: 0.2)),
-            ),
-            child: const Icon(
-              Icons.tips_and_updates_outlined,
-              size: 18,
-              color: AppTheme.accent,
-            ),
-          ),
-          const SizedBox(width: 11),
-          Expanded(
-            child: AnimatedSwitcher(
-              duration: AppTheme.transitionMs,
-              transitionBuilder: (child, animation) => FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0, 0.08),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              ),
-              child: Column(
-                key: ValueKey(_index),
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tip.$1,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTheme.ui(size: 13, weight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    tip.$2,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTheme.ui(
-                      size: 11.5,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Row(
-            children: [
-              for (var i = 0; i < _tips.length; i++)
-                Container(
-                  width: i == _index ? 14 : 5,
-                  height: 5,
-                  margin: const EdgeInsets.only(right: 4),
-                  decoration: BoxDecoration(
-                    color: i == _index
-                        ? AppTheme.accent
-                        : AppTheme.textDim.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 4),
-          _arrow(Icons.chevron_left, () => _go(_tips.length - 1)),
-          _arrow(Icons.chevron_right, () => _go(1)),
-        ],
-      ),
-    );
-  }
-
-  Widget _arrow(IconData icon, VoidCallback onTap) => PressableScale(
-    onTap: onTap,
-    child: Padding(
-      padding: const EdgeInsets.all(2),
-      child: Icon(icon, size: 18, color: AppTheme.textDim),
-    ),
-  );
-}
-
 // -----------------------------------------------------------------------------
 // Right card: recent analyses.
 // -----------------------------------------------------------------------------
 
 class _RecentCard extends StatelessWidget {
-  const _RecentCard({
-    required this.entries,
-    required this.hotkey,
-    required this.onOpenEntry,
-  });
+  const _RecentCard({required this.entries, required this.onOpenEntry});
 
   final List<PromptHistoryEntry> entries;
-  final String hotkey;
   final ValueChanged<PromptHistoryEntry> onOpenEntry;
 
   @override
@@ -1109,38 +868,9 @@ class _RecentCard extends StatelessWidget {
           Expanded(
             child: entries.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'No analyses yet',
-                          style: AppTheme.display(
-                            size: 20,
-                            weight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Press ',
-                              style: AppTheme.ui(
-                                size: 13,
-                                color: AppTheme.textDim,
-                              ),
-                            ),
-                            KeycapBadge.combo(hotkey, size: KeycapSize.small),
-                            Text(
-                              ' to get started',
-                              style: AppTheme.ui(
-                                size: 13,
-                                color: AppTheme.textDim,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    child: Text(
+                      'No analyses yet',
+                      style: AppTheme.display(size: 20, weight: FontWeight.w600),
                     ),
                   )
                 : ListView.separated(

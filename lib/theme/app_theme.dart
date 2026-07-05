@@ -15,11 +15,14 @@ class AppTheme {
   // ---------------------------------------------------------------------------
   // Color tokens — exact values from the landing page CSS custom properties.
   // ---------------------------------------------------------------------------
-  static const Color bgVoid = Color(0xFF211611); // lighter warm dark
-  static const Color bgMid = Color(0xFF3A241A);
-  static const Color surface = Color(0xFF1C1712);
-  static const Color surfaceHigh = Color(0xFF2A2018);
-  static const Color borderSubtle = Color(0x1FF5E4CC); // cream @ 12%
+  // Violet-plum base with warm ember corners — matches the landing's hero
+  // (deep purple field, warm glow bleeding in from the edges).
+  static const Color bgVoid = Color(0xFF221327); // dark violet-plum
+  static const Color bgMid = Color(0xFF45243C); // violet-warm blend
+  static const Color bgViolet = Color(0xFF321D4D); // gradient companion
+  static const Color surface = Color(0xFF2B1B2F);
+  static const Color surfaceHigh = Color(0xFF3D2842);
+  static const Color borderSubtle = Color(0x26F5E4CC); // cream @ 15%
   static const Color borderFocus = Color(0x99F46F3D);
 
   /// --signal-ember: CTAs, active states, selected chips, live indicators.
@@ -30,6 +33,11 @@ class AppTheme {
 
   /// Deeper terracotta companion for gradients and pressed states.
   static const Color accentDeep = Color(0xFFC85632);
+
+  /// Secondary violet used ONLY inside iridescent shimmer/glow effects
+  /// (see widgets/shimmer_text.dart) — never a primary UI color. Ember stays
+  /// the one brand accent for buttons, CTAs, and selected states.
+  static const Color accentViolet = Color(0xFFA855F7);
 
   /// Text/icon color placed ON ember fills (dark warm, ~7:1 contrast).
   static const Color onAccent = Color(0xFF1B0E07);
@@ -56,10 +64,10 @@ class AppTheme {
     end: Alignment.centerRight,
   );
 
-  /// Border gradient — the breathing screen border. ember → deep → ember so
-  /// the animated stop offset loops seamlessly.
+  /// Border gradient — the breathing screen border. ember → violet → ember so
+  /// the animated stop offset loops seamlessly with an iridescent flow.
   static const Gradient borderGradient = LinearGradient(
-    colors: [accent, accentDeep, accent],
+    colors: [accent, accentViolet, accent],
     stops: [0.0, 0.5, 1.0],
   );
 
@@ -67,25 +75,32 @@ class AppTheme {
   // Surface decoration helpers
   // ---------------------------------------------------------------------------
 
-  /// Dark glass panel used by the overlay windows.
+  /// Dark glass panel used by the overlay windows — violet field warming to
+  /// ember at the far corner, like the landing hero.
   static BoxDecoration glassPanel({double radius = 20}) => BoxDecoration(
     gradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
       colors: [
         bgVoid.withValues(alpha: 0.97),
+        bgViolet.withValues(alpha: 0.9),
         bgMid.withValues(alpha: 0.88),
-        bgVoid.withValues(alpha: 0.95),
       ],
     ),
     borderRadius: BorderRadius.circular(radius),
     border: Border.all(color: accent.withValues(alpha: 0.16)),
     boxShadow: [
       BoxShadow(
-        color: accent.withValues(alpha: 0.16),
+        color: accent.withValues(alpha: 0.14),
         blurRadius: 72,
         spreadRadius: -24,
         offset: const Offset(0, 28),
+      ),
+      BoxShadow(
+        color: accentViolet.withValues(alpha: 0.12),
+        blurRadius: 88,
+        spreadRadius: -28,
+        offset: const Offset(0, 20),
       ),
       const BoxShadow(
         color: Color(0xAA000000),
@@ -101,21 +116,28 @@ class AppTheme {
       end: Alignment.bottomRight,
       colors: [
         bgVoid.withValues(alpha: 0.98),
-        surface.withValues(alpha: 0.96),
-        bgMid.withValues(alpha: 0.82),
+        bgViolet.withValues(alpha: 0.94),
+        bgMid.withValues(alpha: 0.85),
       ],
-      stops: const [0, 0.62, 1],
+      stops: const [0, 0.58, 1],
     ),
     borderRadius: BorderRadius.circular(radius),
     border: Border.all(color: accent.withValues(alpha: 0.24)),
     boxShadow: [
+      // Dual ember + violet glow = the iridescent halo around the island.
       BoxShadow(
-        color: accent.withValues(alpha: 0.24),
+        color: accent.withValues(alpha: 0.2),
         blurRadius: 68,
         spreadRadius: -22,
         offset: const Offset(0, 24),
       ),
       BoxShadow(
+        color: accentViolet.withValues(alpha: 0.16),
+        blurRadius: 80,
+        spreadRadius: -26,
+        offset: const Offset(0, 16),
+      ),
+      const BoxShadow(
         color: Color(0x99000000),
         blurRadius: 42,
         offset: Offset(0, 22),
@@ -124,10 +146,19 @@ class AppTheme {
   );
 
   /// Card-on-surface decoration used across dashboard/settings cards.
-  static BoxDecoration card({double radius = 14}) => BoxDecoration(
-    color: surface,
+  /// Apple-style materials: a translucent cream lift over the violet field
+  /// with a hairline border — depth from layering, not from heavy outlines.
+  static BoxDecoration card({double radius = 16}) => BoxDecoration(
+    gradient: LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: [
+        textPrimary.withValues(alpha: 0.055),
+        textPrimary.withValues(alpha: 0.035),
+      ],
+    ),
     borderRadius: BorderRadius.circular(radius),
-    border: Border.all(color: borderSubtle),
+    border: Border.all(color: textPrimary.withValues(alpha: 0.07)),
   );
 
   // ---------------------------------------------------------------------------
