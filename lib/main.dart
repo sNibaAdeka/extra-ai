@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +20,7 @@ import 'models/prompt_history_entry.dart';
 import 'services/auth_service.dart';
 import 'services/hive_account_store.dart';
 import 'services/hotkey_combo.dart';
+import 'services/settings_service.dart';
 import 'services/template_bindings_service.dart';
 
 /// All credentials are injected at build/run time and never committed:
@@ -162,10 +164,16 @@ Future<void> bootstrapMainWindow() async {
   Future<void> registerHotkeys() async {
     await hotKeyManager.unregisterAll();
     final analysisCombo =
-        parseCombo(appState.settings?.hotkeyCombo ?? '⌘⇧E') ??
+        parseCombo(
+          appState.settings?.hotkeyCombo ?? SettingsService.defaultHotkeyCombo,
+        ) ??
         HotKey(
           key: PhysicalKeyboardKey.keyE,
-          modifiers: [HotKeyModifier.meta, HotKeyModifier.shift],
+          modifiers: [
+            // ⌘ on macOS; Ctrl elsewhere (Win key would be awkward).
+            Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+            HotKeyModifier.shift,
+          ],
           scope: HotKeyScope.system,
         );
     await hotKeyManager.register(

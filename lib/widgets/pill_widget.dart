@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
+import '../services/settings_service.dart';
 import '../theme/app_theme.dart';
 import 'logo_mark.dart';
 
@@ -94,7 +95,7 @@ class _HotkeyBadge extends StatelessWidget {
         border: Border.all(color: AppTheme.borderSubtle),
       ),
       child: Text(
-        '⌘⇧E',
+        SettingsService.defaultHotkeyCombo,
         style: AppTheme.ui(
           size: 12,
           weight: FontWeight.w500,

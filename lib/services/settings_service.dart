@@ -1,5 +1,7 @@
 // PRIVACY NOTE: preferences are stored locally via Hive only.
 
+import 'dart:io' show Platform;
+
 import 'package:hive/hive.dart';
 
 /// App preferences (Settings screens 8–13). Thin typed wrapper over a Hive
@@ -24,9 +26,14 @@ class SettingsService {
       _box.get('historyRetention', defaultValue: 'forever');
   Future<void> setHistoryRetention(String v) => _box.put('historyRetention', v);
 
+  /// Platform default: ⌘⇧E on macOS, Ctrl+Shift+E elsewhere (⌘ maps to the
+  /// awkward Win key on Windows).
+  static final String defaultHotkeyCombo = Platform.isMacOS ? '⌘⇧E' : '⌃⇧E';
+
   /// Display combo for the global analysis hotkey (capture UI). The actual
   /// system registration happens at startup in main.dart.
-  String get hotkeyCombo => _box.get('hotkeyCombo', defaultValue: '⌘⇧E');
+  String get hotkeyCombo =>
+      _box.get('hotkeyCombo', defaultValue: defaultHotkeyCombo);
   Future<void> setHotkeyCombo(String v) => _box.put('hotkeyCombo', v);
 
   /// Whether the user has passed the project-linking onboarding step (even if

@@ -34,7 +34,20 @@ class DetectedProject {
 class ProjectDetectionService {
   ProjectDetectionService._();
 
-  static String get _home => Platform.environment['HOME'] ?? '';
+  static String get _home =>
+      Platform.environment['HOME'] ??
+      Platform.environment['USERPROFILE'] ??
+      '';
+
+  /// Cursor/VS Code keep workspaceStorage under Application Support on
+  /// macOS and under %APPDATA% (Roaming) on Windows.
+  static String _workspaceStorage(String product) {
+    if (Platform.isWindows) {
+      final appData = Platform.environment['APPDATA'] ?? '$_home\\AppData\\Roaming';
+      return '$appData\\$product\\User\\workspaceStorage';
+    }
+    return '$_home/Library/Application Support/$product/User/workspaceStorage';
+  }
 
   /// Full detection across all sources, deduped and stack-tagged.
   static Future<List<DetectedProject>> detectAll({
@@ -44,16 +57,10 @@ class ProjectDetectionService {
     final results = <DetectedProject>[];
 
     results.addAll(
-      await _fromWorkspaceStorage(
-        '$_home/Library/Application Support/Cursor/User/workspaceStorage',
-        'Cursor',
-      ),
+      await _fromWorkspaceStorage(_workspaceStorage('Cursor'), 'Cursor'),
     );
     results.addAll(
-      await _fromWorkspaceStorage(
-        '$_home/Library/Application Support/Code/User/workspaceStorage',
-        'VS Code',
-      ),
+      await _fromWorkspaceStorage(_workspaceStorage('Code'), 'VS Code'),
     );
     results.addAll(await _fromCodexStorage());
     results.addAll(await _fromClaudeStorage());

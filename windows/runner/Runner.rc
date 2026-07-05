@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "ai.extra" "\0"
-            VALUE "FileDescription", "extra_ai" "\0"
+            VALUE "FileDescription", "Extra AI" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "extra_ai" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 ai.extra. All rights reserved." "\0"
             VALUE "OriginalFilename", "extra_ai.exe" "\0"
-            VALUE "ProductName", "extra_ai" "\0"
+            VALUE "ProductName", "Extra AI" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

@@ -37,10 +37,25 @@ jobs:
           -Path "build/windows/x64/runner/Release/*"
           -DestinationPath "ExtraAI-windows-x64.zip"
 
+      # Inno Setup 6 is preinstalled on windows-latest; choco is the fallback.
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+          }
+          & $iscc windows\installer.iss
+
       - uses: actions/upload-artifact@v4
         with:
           name: ExtraAI-windows-x64
           path: ExtraAI-windows-x64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ExtraAI-Setup
+          path: windows/Output/ExtraAI-Setup-1.0.0.exe
 
       # On tag pushes, attach the zip to a GitHub Release for stable URLs.
       - name: Attach to release
@@ -51,7 +66,9 @@ jobs:
         run: >-
           gh release create "${{ github.ref_name }}"
           "ExtraAI-windows-x64.zip"
+          "windows/Output/ExtraAI-Setup-1.0.0.exe"
           --title "Extra AI ${{ github.ref_name }}"
           --notes "Windows x64 build" ||
           gh release upload "${{ github.ref_name }}"
-          "ExtraAI-windows-x64.zip" --clobber
+          "ExtraAI-windows-x64.zip"
+          "windows/Output/ExtraAI-Setup-1.0.0.exe" --clobber

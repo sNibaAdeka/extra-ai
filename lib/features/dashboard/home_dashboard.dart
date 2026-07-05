@@ -6,6 +6,7 @@ import '../../app/app_state.dart';
 import '../../models/backend_sync_state.dart';
 import '../../models/project_context.dart';
 import '../../models/prompt_history_entry.dart';
+import '../../services/settings_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/controls.dart';
 import 'week_activity.dart';
@@ -58,7 +59,7 @@ class HomeDashboard extends StatelessWidget {
               style: AppTheme.ui(size: 12, color: AppTheme.textDim),
             ),
             KeycapBadge.combo(
-              state.settings?.hotkeyCombo ?? '⌘⇧E',
+              state.settings?.hotkeyCombo ?? SettingsService.defaultHotkeyCombo,
               size: KeycapSize.small,
             ),
             Text(

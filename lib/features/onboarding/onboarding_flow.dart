@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../models/user_profile.dart';
+import '../../services/settings_service.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/controls.dart';
 import '../../widgets/gradient_button.dart';
@@ -38,7 +39,7 @@ class _OnboardingFlowState extends State<OnboardingFlow> {
   ];
 
   int _step = 0;
-  String _hotkey = '⌘⇧E';
+  String _hotkey = SettingsService.defaultHotkeyCombo;
   bool _capturingHotkey = false;
 
   ExperienceLevel? _experience;
